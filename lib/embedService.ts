@@ -1,7 +1,10 @@
 // lib/embedService.ts
 // 100% FREE local vector embedding generator using transformers.js
 // Runs the all-MiniLM-L6-v2 model directly on your machine — no API key needed.
-import { pipeline, Pipeline } from '@xenova/transformers';
+import { pipeline, Pipeline, env } from '@xenova/transformers';
+
+// Configure Xenova to cache models in the writable /tmp folder in Serverless environments (like Vercel)
+env.cacheDir = '/tmp/.cache';
 
 let embeddingPipeline: any = null;
 
