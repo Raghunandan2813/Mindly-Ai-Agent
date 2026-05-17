@@ -1,39 +1,61 @@
 // components/MemoryPanel.tsx
-// Beautiful monochrome memory vault explorer with search, filters, and delete.
+// Monochrome memory vault: displays knowledge graph nodes with type badges and connection counts.
 'use client';
 import React, { useState } from 'react';
 
-export interface Memory {
+export interface MemoryNode {
   id: string;
-  role: string;
+  label: string;
+  node_type: string;
   content: string;
   created_at: string;
-  session_id: string;
+  metadata?: Record<string, any>;
+}
+
+export interface MemoryEdge {
+  id: string;
+  source_id: string;
+  target_id: string;
+  relation: string;
+  strength: number;
 }
 
 interface MemoryPanelProps {
-  memories: Memory[];
+  nodes: MemoryNode[];
+  edges: MemoryEdge[];
   onDelete: (id: string) => void;
   loading: boolean;
 }
 
-export default function MemoryPanel({ memories, onDelete, loading }: MemoryPanelProps) {
+// Node type → icon mapping
+const TYPE_ICONS: Record<string, string> = {
+  person: '👤',
+  pet: '🐾',
+  preference: '⭐',
+  fact: '📌',
+  skill: '⚡',
+  location: '📍',
+  attribute: '🏷️',
+};
+
+export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryPanelProps) {
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string | null>(null);
 
-  const filtered = memories.filter(m =>
-    m.content.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = nodes.filter(n => {
+    const matchesSearch = n.label.toLowerCase().includes(search.toLowerCase()) ||
+      n.content.toLowerCase().includes(search.toLowerCase());
+    const matchesType = !filterType || n.node_type === filterType;
+    return matchesSearch && matchesType;
+  });
 
-  // Group memories by date
-  const grouped = filtered.reduce<Record<string, Memory[]>>((acc, m) => {
-    const date = new Date(m.created_at).toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'long', year: 'numeric'
-    });
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(m);
-    return acc;
-  }, {});
+  // Get unique node types for filter buttons
+  const nodeTypes = [...new Set(nodes.map(n => n.node_type))];
+
+  // Count connections for each node
+  const connectionCount = (nodeId: string) =>
+    edges.filter(e => e.source_id === nodeId || e.target_id === nodeId).length;
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
@@ -61,75 +83,138 @@ export default function MemoryPanel({ memories, onDelete, loading }: MemoryPanel
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search your memories..."
+          placeholder="Search your knowledge graph..."
           className="input-dark pl-11"
         />
       </div>
 
-      {/* Stats bar */}
-      <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
-        <span className="memory-pill">{memories.length} total memories</span>
-        {search && <span className="memory-pill">{filtered.length} matching</span>}
+      {/* Stats + type filters */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="memory-pill">{nodes.length} nodes</span>
+        <span className="memory-pill">{edges.length} connections</span>
+        <div className="w-px h-4 bg-[#333333] mx-1" />
+        <button
+          onClick={() => setFilterType(null)}
+          className={`px-2 py-1 rounded-lg transition-colors ${
+            !filterType ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-[#1c1c1c]'
+          }`}
+        >
+          All
+        </button>
+        {nodeTypes.map(type => (
+          <button
+            key={type}
+            onClick={() => setFilterType(filterType === type ? null : type)}
+            className={`px-2 py-1 rounded-lg transition-colors flex items-center gap-1 ${
+              filterType === type ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-[#1c1c1c]'
+            }`}
+          >
+            <span>{TYPE_ICONS[type] || '📄'}</span>
+            {type}
+          </button>
+        ))}
       </div>
 
       {/* Empty state */}
       {filtered.length === 0 && (
         <div className="text-center py-16">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center">
-            <span className="text-3xl opacity-40">🧠</span>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#0d0d0d] border border-[#222222] flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="20" height="20" rx="5" fill="#000000" stroke="#333333" strokeWidth="1.2" />
+              <path d="M6 8l3 3-3 3" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <line x1="10" y1="14" x2="14" y2="14" stroke="#a3a3a3" strokeWidth="1.5" />
+            </svg>
           </div>
-          <p className="text-[var(--text-muted)] text-sm">
-            {search ? 'No memories match your search' : 'No memories yet — start chatting to build your memory vault'}
+          <p className="text-neutral-500 text-sm">
+            {search ? 'No nodes match your search' : 'No memory nodes yet — start chatting to build your knowledge graph'}
           </p>
         </div>
       )}
 
-      {/* Memory list grouped by date */}
-      {Object.entries(grouped).map(([date, items]) => (
-        <div key={date}>
-          <h3 className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-            {date}
-          </h3>
-          <div className="space-y-2">
-            {items.map((m, idx) => (
-              <div
-                key={m.id}
-                className="glass-card glass-card-hover px-4 py-3 flex items-start justify-between gap-3 animate-fade-in-up"
-                style={{ animationDelay: `${idx * 0.03}s` }}
-              >
+      {/* Node list */}
+      <div className="space-y-2">
+        {filtered.map((node, idx) => {
+          const connections = connectionCount(node.id);
+          const connectedEdges = edges.filter(
+            e => e.source_id === node.id || e.target_id === node.id
+          );
+
+          return (
+            <div
+              key={node.id}
+              className="glass-card glass-card-hover px-4 py-3 animate-fade-in-up bg-[#0c0c0c] border border-[#222222] rounded-xl"
+              style={{ animationDelay: `${idx * 0.03}s` }}
+            >
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[var(--text-primary)] leading-relaxed break-words">
-                    {m.content}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-[10px] text-[var(--text-muted)]">
-                      {new Date(m.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                  {/* Node header */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm">{TYPE_ICONS[node.node_type] || '📄'}</span>
+                    <span className="text-sm font-semibold text-white">{node.label}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1c1c1c] border border-[#333333] text-neutral-400 uppercase tracking-wider">
+                      {node.node_type}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--bg-input)] text-[var(--text-muted)] border border-[var(--border)]">
-                      {m.session_id?.slice(0, 8)}
+                    {connections > 0 && (
+                      <span className="text-[10px] text-neutral-500">
+                        {connections} link{connections !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Node content */}
+                  <p className="text-xs text-neutral-400 leading-relaxed break-words">
+                    {node.content}
+                  </p>
+
+                  {/* Connected relations */}
+                  {connectedEdges.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {connectedEdges.slice(0, 5).map(edge => (
+                        <span
+                          key={edge.id}
+                          className="text-[9px] px-1.5 py-0.5 rounded bg-[#141414] border border-[#222222] text-neutral-500"
+                        >
+                          {edge.relation}
+                        </span>
+                      ))}
+                      {connectedEdges.length > 5 && (
+                        <span className="text-[9px] text-neutral-600">+{connectedEdges.length - 5} more</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Timestamp */}
+                  <div className="mt-2">
+                    <span className="text-[10px] text-neutral-600">
+                      {new Date(node.created_at).toLocaleDateString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                      })}
                     </span>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDelete(m.id)}
-                  disabled={deleting === m.id}
-                  className="flex-shrink-0 p-1.5 rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
-                  title="Delete memory"
-                >
-                  {deleting === m.id ? (
-                    <span className="text-xs">...</span>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                    </svg>
-                  )}
-                </button>
+
+                {/* Delete button */}
+                {node.label !== 'user' && (
+                  <button
+                    onClick={() => handleDelete(node.id)}
+                    disabled={deleting === node.id}
+                    className="flex-shrink-0 p-1.5 rounded-lg hover:bg-white/10 text-neutral-600 hover:text-white transition-colors"
+                    title="Delete node"
+                  >
+                    {deleting === node.id ? (
+                      <span className="text-xs">...</span>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      </svg>
+                    )}
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      ))}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

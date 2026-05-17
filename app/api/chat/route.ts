@@ -1,8 +1,9 @@
 // app/api/chat/route.ts
-// POST: Process incoming user messages, retrieve related memories, prompt AI (with fallback), and save new memories.
+// POST: Process incoming user messages, retrieve graph-based memories, prompt AI, and extract knowledge nodes.
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { saveMessage, searchMemories } from '@/lib/memoryService';
+import { saveMessage, searchMemories, getRecentChatLogs } from '@/lib/memoryService';
+import { extractAndStoreNodes } from '@/lib/graphMemoryService';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ChatRequestBody {
@@ -11,15 +12,15 @@ interface ChatRequestBody {
   userId: string;
 }
 
-// Highly reliable list of active free models on OpenRouter
+// Active free models on OpenRouter (May 2026)
 const OPENROUTER_FREE_FALLBACKS = [
-  'baidu/cobuddy:free',
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'qwen/qwen-2.5-7b-instruct:free',
-  'google/gemma-2-9b-it:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
-  'microsoft/phi-3-medium-128k-instruct:free',
-  'meta-llama/llama-3-8b-instruct:free',
+  'deepseek/deepseek-v4-flash:free',
+  'qwen/qwen3-coder:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'google/gemma-4-31b-it:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
+  'openrouter/free',
 ];
 
 export async function POST(req: NextRequest) {
@@ -32,28 +33,29 @@ export async function POST(req: NextRequest) {
     const sid = sessionId || uuidv4();
     const provider = (process.env.PROVIDER || 'gemini').toLowerCase();
 
-    // 1. fetch relevant memories from ALL sessions
-    const memories = await searchMemories(userId, message);
+    // 1. Retrieve hybrid memory context (Knowledge Graph facts + chronological raw logs)
+    const [memoryContext, recentLogsContext] = await Promise.all([
+      searchMemories(userId, message),
+      getRecentChatLogs(userId, 15) // Get the last 15 messages across all sessions
+    ]);
 
-    const memoryContext = memories.length > 0
-      ? memories.map(m =>
-        `[${new Date(m.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}] ${m.role}: ${m.content}`
-      ).join('\n')
-      : 'No past conversations yet.';
+    const systemPrompt = `You are a helpful AI assistant with perfect memory of past conversations with this user across all sessions, dates, and chats.
 
-    const systemPrompt = `You are a helpful AI assistant with perfect memory of every past conversation with this user across all sessions and dates.
+To help you remember, here is the context retrieved from the database for this user:
 
-Here is what you remember from past conversations:
----
+=== LONG-TERM MEMORY (Knowledge Graph Facts) ===
 ${memoryContext}
----
+================================================
 
-Rules:
-- Use this memory to give contextual, personalized answers
-- If asked "what did I ask on [date]?" search the memory above and answer precisely
-- If asked "what did we talk about?" summarize from the memory above
-- Never say you don't remember — if it's not in memory, say "I don't have a record of that"
-- Be natural, don't quote the memory verbatim, just use it`;
+=== SHORT-TERM MEMORY (Recent Conversation Logs Across Sessions) ===
+${recentLogsContext}
+=====================================================================
+
+Rules & Instructions:
+- Carefully inspect BOTH the Long-Term Knowledge Graph and the Short-Term Recent Logs context above.
+- If the user asks about what was discussed in their previous sessions or recent turns (e.g., ticket comparisons, trip planning, yesterday's chat, etc.), refer directly to the "SHORT-TERM MEMORY" logs above and summarize it perfectly.
+- If asked personal details, facts, or preferences, use the "LONG-TERM MEMORY" knowledge graph to personalize your answer.
+- Always sound natural and responsive. Avoid referencing internal details like "Session IDs" or repeating context tags in your reply. Just talk to the user like a friend with an amazing memory.`;
 
     let reply = '';
 
@@ -127,6 +129,34 @@ Rules:
         throw new Error(`OpenRouter failed for all models. Last error: ${lastError}`);
       }
 
+    } else if (provider === 'groq') {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) throw new Error('GROQ_API_KEY is not set.');
+
+      const modelName = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ],
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(`Groq error: ${errorData.error?.message || res.statusText}`);
+      }
+
+      const data = await res.json();
+      reply = data.choices?.[0]?.message?.content || 'No response from Groq';
+
     } else if (provider === 'ollama') {
       const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
       const modelName = process.env.OLLAMA_MODEL || 'llama3';
@@ -155,11 +185,18 @@ Rules:
       throw new Error(`Unknown provider: ${provider}`);
     }
 
-    // 3. save both messages to memory
+    // 3. Save both raw messages to conversation log (lightweight, no embeddings)
     await saveMessage(userId, 'user', message, sid);
     await saveMessage(userId, 'assistant', reply, sid);
 
-    return NextResponse.json({ reply, sessionId: sid, memoriesUsed: memories.length });
+    // 4. ASYNC: Extract knowledge graph nodes in the background (non-blocking)
+    extractAndStoreNodes(userId, message, reply).catch(err => {
+      console.error('[Chat] Background graph extraction failed:', err);
+    });
+
+    const memoriesCount = (memoryContext.match(/\[/g) || []).length;
+
+    return NextResponse.json({ reply, sessionId: sid, memoriesUsed: memoriesCount });
 
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : 'Unknown error';

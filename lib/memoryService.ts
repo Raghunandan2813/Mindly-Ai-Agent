@@ -1,11 +1,10 @@
 // lib/memoryService.ts
-// Core memory management: save, retrieve, and search memories.
-import { supabase, supabaseAdmin } from './supabase';
+// Lightweight message storage (no embeddings) + graph-based memory retrieval.
+import { supabaseAdmin, supabase } from './supabase';
+import { searchGraphMemory } from './graphMemoryService';
 
-// Use admin client for server-side operations to bypass RLS, fallback to public client
+// Use admin client for server-side operations to bypass RLS
 const db = supabaseAdmin || supabase;
-import { getEmbedding } from './embedService';
-import { detectDateRange } from './dateDetect';
 
 export interface MemoryRecord {
     id: string;
@@ -15,52 +14,49 @@ export interface MemoryRecord {
     session_id?: string;
 }
 
+/**
+ * Save a raw message to the messages table (no embedding — lightweight).
+ */
 export async function saveMessage(
     userId: string,
     role: string,
     content: string,
     sessionId: string
 ): Promise<void> {
-    const embedding = await getEmbedding(content);
     await db.from('messages').insert({
         user_id: userId, role, content,
-        embedding, session_id: sessionId
+        session_id: sessionId
     });
 }
 
+/**
+ * Search memories using the knowledge graph.
+ * Combines semantic vector search on nodes + 1-hop graph traversal.
+ */
 export async function searchMemories(
     userId: string,
     query: string
-): Promise<MemoryRecord[]> {
-    const embedding = await getEmbedding(query);
+): Promise<string> {
+    return searchGraphMemory(userId, query);
+}
 
-    // 1. semantic search
-    const { data: semantic } = await db.rpc('match_messages', {
-        query_embedding: embedding,
-        match_user_id: userId,
-        match_count: 15
-    });
+/**
+ * Retrieve the most recent raw messages across all sessions to serve as chronological short-term conversational context.
+ */
+export async function getRecentChatLogs(userId: string, limit = 15): Promise<string> {
+    const { data: logs } = await db
+        .from('messages')
+        .select('role, content, session_id, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-    // 2. time-based search
-    const range = detectDateRange(query);
-    let timeResults: MemoryRecord[] = [];
-    if (range) {
-        const { data } = await db
-            .from('messages')
-            .select('id, content, role, created_at')
-            .eq('user_id', userId)
-            .gte('created_at', range.from.toISOString())
-            .lte('created_at', range.to.toISOString())
-            .order('created_at', { ascending: false })
-            .limit(20);
-        timeResults = (data as MemoryRecord[]) || [];
-    }
+    if (!logs || logs.length === 0) return 'No recent chat history.';
 
-    // merge + deduplicate
-    const all = [...((semantic as MemoryRecord[]) || []), ...timeResults];
-    const seen = new Set<string>();
-    return all.filter((m) => {
-        if (seen.has(m.id)) return false;
-        seen.add(m.id); return true;
-    }).slice(0, 20);
+    // Reverse to chronological order
+    const chronological = [...logs].reverse();
+
+    return chronological
+        .map(log => `[Session: ${log.session_id ? log.session_id.slice(-6) : 'unknown'}] ${log.role === 'user' ? 'USER' : 'ASSISTANT'}: ${log.content}`)
+        .join('\n');
 }

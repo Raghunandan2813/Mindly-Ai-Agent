@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 // Animated neural network canvas background (Monochrome)
 function NeuralCanvas() {
@@ -100,6 +101,15 @@ export default function LoginPage() {
   const [success, setSuccess] = useState('');
   const router = useRouter();
 
+  // Read URL query errors (like OAuth callback errors)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get('error');
+    if (err) {
+      setError(decodeURIComponent(err));
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess(''); setLoading(true);
@@ -117,32 +127,44 @@ export default function LoginPage() {
     } catch { setError('Network error'); } finally { setLoading(false); }
   };
 
+  const handleGoogleLogin = async () => {
+    setError(''); setSuccess(''); setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Failed to initialize Google Sign In');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex text-[#f5f5f5] bg-black">
       {/* Left — Animated neural network (Monochrome) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-black border-r border-[#222222]">
         <NeuralCanvas />
         <div className="relative z-10 flex flex-col justify-center items-center w-full px-12">
-          {/* Brain circuit icon (Monochrome) */}
-          <svg width="120" height="120" viewBox="0 0 120 120" fill="none" className="mb-8 drop-shadow-2xl">
-            <circle cx="60" cy="60" r="55" stroke="url(#grad)" strokeWidth="1.5" opacity="0.2" />
-            <circle cx="60" cy="60" r="35" stroke="url(#grad)" strokeWidth="1" opacity="0.1" />
-            <circle cx="60" cy="38" r="4" fill="#ffffff" />
-            <circle cx="40" cy="55" r="3.5" fill="#a3a3a3" />
-            <circle cx="80" cy="55" r="3.5" fill="#a3a3a3" />
-            <circle cx="50" cy="75" r="3" fill="#525252" />
-            <circle cx="70" cy="75" r="3" fill="#525252" />
-            <circle cx="60" cy="60" r="5" fill="#ffffff" />
-            <line x1="60" y1="38" x2="60" y2="55" stroke="#ffffff" strokeWidth="1" opacity="0.3" />
-            <line x1="40" y1="55" x2="55" y2="60" stroke="#a3a3a3" strokeWidth="1" opacity="0.3" />
-            <line x1="65" y1="60" x2="80" y2="55" stroke="#a3a3a3" strokeWidth="1" opacity="0.3" />
-            <line x1="57" y1="65" x2="50" y2="75" stroke="#525252" strokeWidth="1" opacity="0.3" />
-            <line x1="63" y1="65" x2="70" y2="75" stroke="#525252" strokeWidth="1" opacity="0.3" />
-            <defs>
-              <linearGradient id="grad" x1="0" y1="0" x2="120" y2="120">
-                <stop stopColor="#ffffff" /><stop offset="1" stopColor="#222222" />
-              </linearGradient>
-            </defs>
+          {/* Cybernetic Developer Terminal Neural Logo */}
+          <svg width="130" height="130" viewBox="0 0 120 120" fill="none" className="mb-8 drop-shadow-2xl">
+            <rect x="10" y="10" width="100" height="100" rx="16" fill="#0d0d0d" stroke="#262626" strokeWidth="1.5" />
+            <path d="M10 35h100M10 60h100M10 85h100M35 10v100M60 10v100M85 10v100" stroke="#141414" strokeWidth="0.8" />
+            <circle cx="26" cy="24" r="3" fill="#333333" />
+            <circle cx="36" cy="24" r="3" fill="#333333" />
+            <circle cx="46" cy="24" r="3" fill="#333333" />
+            <path d="M26 46l8 6-8 6" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <line x1="38" y1="58" x2="48" y2="58" stroke="#a3a3a3" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M52 58h18l12-12h12M70 58l10 10h14" stroke="#525252" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M60 42l10-10h22" stroke="#404040" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="92" cy="46" r="4.5" fill="#ffffff" stroke="#000000" strokeWidth="1" />
+            <circle cx="94" cy="68" r="3.5" fill="#a3a3a3" stroke="#000000" strokeWidth="1" />
+            <circle cx="92" cy="32" r="3.5" fill="#737373" stroke="#000000" strokeWidth="1" />
+            <text x="30" y="86" fill="#404040" fontSize="8.5" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">01001101</text>
+            <text x="30" y="97" fill="#222222" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">SYS_MEM</text>
           </svg>
           <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">Memory Agent</h2>
           <p className="text-[#a3a3a3] text-center text-sm max-w-xs leading-relaxed">
@@ -200,6 +222,29 @@ export default function LoginPage() {
               {loading ? 'Authenticating...' : isSignup ? 'Create Account →' : 'Sign In →'}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-[1px] bg-[#222222]" />
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">Or continue with</span>
+            <div className="flex-1 h-[1px] bg-[#222222]" />
+          </div>
+
+          {/* Google Sign In Button */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full h-12 rounded-xl border border-[#222222] bg-[#0d0d0d] hover:bg-[#141414] hover:border-[#555555] transition-all flex items-center justify-center gap-3 text-sm font-semibold text-white"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.5 24c0-1.55-.15-3.24-.47-4.77H24v9.03h12.75c-.55 2.86-2.18 5.29-4.63 6.91l7.19 5.56C43.5 36.5 46.5 30.82 46.5 24z"/>
+              <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.98-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.19-5.56c-2.03 1.36-4.63 2.18-8.7 2.18-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Sign in with Google
+          </button>
 
           <p className="mt-8 text-center text-xs text-[var(--text-muted)]">
             {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
