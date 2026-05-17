@@ -123,7 +123,12 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       setSuccess(data.message);
-      setTimeout(() => router.push('/'), 500);
+      
+      // Only redirect automatically if it was a successful login. 
+      // If it was a signup, keep the user on the page to read the email instructions!
+      if (!isSignup) {
+        setTimeout(() => router.push('/'), 500);
+      }
     } catch { setError('Network error'); } finally { setLoading(false); }
   };
 

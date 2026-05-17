@@ -13,10 +13,20 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password }: SignupBody = await req.json();
 
-    // 1. Validate email format
+    // 1. Validate email format & trusted providers
     if (!email || !isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Please enter a valid email address (e.g., user@example.com)' },
+        { status: 400 }
+      );
+    }
+
+    const trustedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+    const emailDomain = email.split('@')[1]?.toLowerCase().trim();
+    
+    if (!trustedDomains.includes(emailDomain)) {
+      return NextResponse.json(
+        { error: 'Registration is restricted to trusted email providers (Gmail, Yahoo, Outlook, Hotmail, iCloud) to secure accounts.' },
         { status: 400 }
       );
     }
