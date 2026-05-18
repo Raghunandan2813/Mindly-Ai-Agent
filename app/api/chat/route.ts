@@ -23,6 +23,28 @@ const OPENROUTER_FREE_FALLBACKS = [
   'openrouter/free',
 ];
 
+function selectGroqModel(message: string): string {
+  const lowercaseMsg = message.toLowerCase();
+  
+  // Complex tasks heuristics (e.g. coding, planning, system design, math)
+  const complexKeywords = [
+    'write a code', 'program', 'function', 'class in', 'algorithm', 
+    'analyze', 'compare', 'difference between', 'elaborate on', 
+    'explain in detail', 'architect', 'design a system', 'complex math',
+    'solve', 'prove', 'derivation', 'step by step explanation'
+  ];
+  
+  const isComplex = complexKeywords.some(keyword => lowercaseMsg.includes(keyword)) || message.length > 300;
+  
+  if (isComplex) {
+    console.log(`[Groq Model Tiering] Query classified as COMPLEX. Routing to llama-3.3-70b-versatile...`);
+    return 'llama-3.3-70b-versatile';
+  }
+  
+  console.log(`[Groq Model Tiering] Query classified as SIMPLE. Routing to llama-3.1-8b-instant...`);
+  return 'llama-3.1-8b-instant';
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message, sessionId, userId }: ChatRequestBody = await req.json();
@@ -133,28 +155,58 @@ Rules & Instructions:
       const apiKey = process.env.GROQ_API_KEY;
       if (!apiKey) throw new Error('GROQ_API_KEY is not set.');
 
-      const modelName = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: message }
-          ],
-        }),
-      });
+      // Smart Model Tiering: Default to heuristic classification unless a custom non-default GROQ_MODEL is explicitly overridden
+      const modelName = process.env.GROQ_MODEL && process.env.GROQ_MODEL !== 'llama-3.1-8b-instant'
+        ? process.env.GROQ_MODEL
+        : selectGroqModel(message);
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(`Groq error: ${errorData.error?.message || res.statusText}`);
+      let response: Response | null = null;
+      let attempts = 0;
+      const maxAttempts = 3;
+      let delay = 2000; // Start with 2 seconds
+
+      while (attempts < maxAttempts) {
+        attempts++;
+        try {
+          response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: modelName,
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: message }
+              ],
+            }),
+          });
+
+          // If rate limited, sleep and retry with exponential backoff
+          if (response.status === 429) {
+            console.warn(`[Groq Rate Limit] Hit 429 (Attempt ${attempts}/${maxAttempts}). Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Double delay: 2s -> 4s
+            continue;
+          }
+
+          break; // Exit loop if successful or other status code
+        } catch (err) {
+          console.warn(`[Groq Fetch Error] Attempt ${attempts}/${maxAttempts} failed:`, err);
+          if (attempts >= maxAttempts) throw err;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        }
       }
 
-      const data = await res.json();
+      if (!response || !response.ok) {
+        const errorData = response ? await response.json().catch(() => ({})) : {};
+        const errMsg = errorData.error?.message || response?.statusText || 'Fetch failed';
+        throw new Error(`Groq error: ${errMsg}`);
+      }
+
+      const data = await response.json();
       reply = data.choices?.[0]?.message?.content || 'No response from Groq';
 
     } else if (provider === 'ollama') {

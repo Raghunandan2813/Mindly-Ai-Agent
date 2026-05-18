@@ -120,24 +120,57 @@ async function extractFacts(userMessage: string, aiReply: string): Promise<Extra
       if (!apiKey) return { nodes: [], edges: [] };
 
       const modelName = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [
-            { role: 'system', content: EXTRACTION_PROMPT },
-            { role: 'user', content: conversationText },
-          ],
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        }),
-      });
+      
+      let response: Response | null = null;
+      let attempts = 0;
+      const maxAttempts = 3;
+      let delay = 3000; // Start with 3 seconds for background tasks
 
-      const data = await res.json();
+      while (attempts < maxAttempts) {
+        attempts++;
+        try {
+          response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: modelName,
+              messages: [
+                { role: 'system', content: EXTRACTION_PROMPT },
+                { role: 'user', content: conversationText },
+              ],
+              temperature: 0.1,
+              response_format: { type: "json_object" }
+            }),
+          });
+
+          // Exponential backoff sleep on rate limit
+          if (response.status === 429) {
+            console.warn(`[GraphMemory Rate Limit] Hit 429 (Attempt ${attempts}/${maxAttempts}). Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Double delay: 3s -> 6s
+            continue;
+          }
+
+          break; // Exit loop if successful or other status code
+        } catch (err) {
+          console.warn(`[GraphMemory Fetch Error] Attempt ${attempts}/${maxAttempts} failed:`, err);
+          if (attempts >= maxAttempts) return { nodes: [], edges: [] };
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        }
+      }
+
+      if (!response || !response.ok) {
+        const errorData = response ? await response.json().catch(() => ({})) : {};
+        const errMsg = errorData.error?.message || response?.statusText || 'Extraction fetch failed';
+        console.error(`[GraphMemory Groq Error] Extraction failed: ${errMsg}`);
+        return { nodes: [], edges: [] };
+      }
+
+      const data = await response.json();
       rawResponse = data.choices?.[0]?.message?.content || '';
 
     } else if (provider === 'ollama') {
@@ -382,7 +415,7 @@ export async function searchGraphMemory(
     const { data: semanticNodes } = await db.rpc('match_nodes', {
       query_embedding: embedding,
       match_user_id: userId,
-      match_count: 8,
+      match_count: 5,
     });
 
     if (semanticNodes && semanticNodes.length > 0) {
