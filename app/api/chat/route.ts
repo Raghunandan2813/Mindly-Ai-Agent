@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { saveMessage, searchMemories, getRecentChatLogs } from '@/lib/memoryService';
 import { extractAndStoreNodes } from '@/lib/graphMemoryService';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ChatRequestBody {
@@ -51,6 +52,31 @@ export async function POST(req: NextRequest) {
 
     if (!userId || !message)
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+
+    // ─── Zero-Dependency PostgreSQL Rate Limiter ───
+    // Throttles at a configurable threshold (default 20/min) per user to safeguard Groq quotas
+    try {
+      const db = supabaseAdmin || supabase;
+      const rateLimitThreshold = Number(process.env.RATE_LIMIT_MAX_PER_MINUTE) || 20;
+      const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+      
+      const { count } = await db
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('role', 'user')
+        .gt('created_at', oneMinuteAgo);
+
+      if (count && count >= rateLimitThreshold) {
+        console.warn(`[Rate Limit Exceeded] User ${userId} blocked. (Requests in last min: ${count}/${rateLimitThreshold})`);
+        return NextResponse.json(
+          { error: `Rate limit exceeded. You can send a maximum of ${rateLimitThreshold} messages per minute.` },
+          { status: 429 }
+        );
+      }
+    } catch (err) {
+      console.warn('[Rate Limit Skip] Bypassing verification due to db exception:', err);
+    }
 
     const sid = sessionId || uuidv4();
     const provider = (process.env.PROVIDER || 'gemini').toLowerCase();
