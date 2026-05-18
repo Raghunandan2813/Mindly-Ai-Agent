@@ -254,23 +254,47 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
     return () => cancelAnimationFrame(animationRef.current);
   }, [render]);
 
-  // Canvas resize
+  // Canvas resize using ResizeObserver to prevent asynchronous sizing lags on mobile
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const parent = canvas.parentElement;
     if (!parent) return;
 
-    const resize = () => {
-      canvas.width = parent.clientWidth;
-      canvas.height = parent.clientHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        const newW = width || parent.clientWidth || 350;
+        const newH = height || parent.clientHeight || 500;
+        
+        canvas.width = newW;
+        canvas.height = newH;
+
+        // If nodes were initialized at (0,0) or got stuck at the top-left boundary
+        // due to mobile loading lag, re-spread them nicely in the center!
+        if (nodesRef.current.length > 0) {
+          const isStuck = nodesRef.current.some(
+            n => n.x === 0 || (Math.abs(n.x - 40) < 5 && Math.abs(n.y - 40) < 5)
+          );
+          if (isStuck && newW > 100 && newH > 100) {
+            nodesRef.current.forEach((node, idx) => {
+              const angle = (idx / nodesRef.current.length) * Math.PI * 2;
+              const radius = Math.min(newW, newH) * 0.25;
+              node.x = newW / 2 + Math.cos(angle) * radius;
+              node.y = newH / 2 + Math.sin(angle) * radius;
+              node.vx = 0;
+              node.vy = 0;
+            });
+          }
+        }
+      }
+    });
+
+    resizeObserver.observe(parent);
+    return () => resizeObserver.disconnect();
   }, []);
 
-  // Mouse interaction handlers
+  // Mouse & Touch interaction handlers
   const getNodeAtPosition = useCallback((x: number, y: number): GraphNode | null => {
     for (const node of nodesRef.current) {
       const dx = x - node.x;
@@ -321,6 +345,44 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
     dragRef.current = { node: null, offsetX: 0, offsetY: 0 };
   }, []);
 
+  // Mobile Native Touch Support
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    const node = getNodeAtPosition(x, y);
+    if (node) {
+      dragRef.current = { node, offsetX: x - node.x, offsetY: y - node.y };
+      setSelectedNode(node);
+      e.preventDefault(); // Stop screen bouncing
+    } else {
+      setSelectedNode(null);
+    }
+  }, [getNodeAtPosition]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    if (dragRef.current.node) {
+      dragRef.current.node.x = x - dragRef.current.offsetX;
+      dragRef.current.node.y = y - dragRef.current.offsetY;
+      dragRef.current.node.vx = 0;
+      dragRef.current.node.vy = 0;
+      e.preventDefault(); // Stop screen scrolling while playing with nodes
+    } else {
+      const node = getNodeAtPosition(x, y);
+      setHoveredNode(node);
+    }
+  }, [getNodeAtPosition]);
+
   return (
     <div className="relative w-full h-full min-h-[500px] bg-black rounded-xl border border-[#222222] overflow-hidden">
       <canvas
@@ -330,6 +392,9 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleMouseUp}
       />
 
       {/* Selected node info panel */}

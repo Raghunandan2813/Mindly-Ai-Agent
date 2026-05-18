@@ -59,17 +59,19 @@ export default function MemoriesPage() {
   return (
     <div className="min-h-screen flex flex-col bg-black">
       {/* Header */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-[#222222] bg-[#0c0c0c]">
-        <div className="flex items-center gap-3">
-          <a href="/" className="btn-ghost text-xs px-3 py-2">← Back to Chat</a>
+      <nav className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-[#222222] bg-[#0c0c0c]">
+        <div className="flex items-center">
+          <a href="/" className="btn-ghost text-xs px-2.5 py-1.5 sm:px-3 sm:py-2">
+            ← Back<span className="hidden sm:inline"> to Chat</span>
+          </a>
         </div>
-        <h1 className="text-base font-semibold text-white">Memory Vault</h1>
+        <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight">Memory Vault</h1>
         
         {/* View Toggle */}
-        <div className="flex items-center gap-1 bg-[#141414] rounded-lg p-0.5 border border-[#222222]">
+        <div className="flex items-center gap-0.5 bg-[#141414] rounded-lg p-0.5 border border-[#222222]">
           <button
             onClick={() => setView('list')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs font-medium transition-all ${
               view === 'list' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
             }`}
           >
@@ -77,7 +79,7 @@ export default function MemoriesPage() {
           </button>
           <button
             onClick={() => setView('graph')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs font-medium transition-all ${
               view === 'graph' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
             }`}
           >
