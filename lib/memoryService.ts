@@ -1,10 +1,13 @@
 // lib/memoryService.ts
 // Lightweight message storage (no embeddings) + graph-based memory retrieval.
-import { supabaseAdmin, supabase } from './supabase';
+import { supabaseAdmin, supabase, createSupabaseServer } from './supabase';
 import { searchGraphMemory } from './graphMemoryService';
 
-// Use admin client for server-side operations to bypass RLS
-const db = supabaseAdmin || supabase;
+// Dynamic client resolver to ensure we are always authenticated on Vercel
+async function getDb() {
+    if (supabaseAdmin) return supabaseAdmin;
+    return await createSupabaseServer();
+}
 
 export interface MemoryRecord {
     id: string;
@@ -23,6 +26,7 @@ export async function saveMessage(
     content: string,
     sessionId: string
 ): Promise<void> {
+    const db = await getDb();
     await db.from('messages').insert({
         user_id: userId, role, content,
         session_id: sessionId
@@ -44,6 +48,7 @@ export async function searchMemories(
  * Retrieve the most recent raw messages across all sessions to serve as chronological short-term conversational context.
  */
 export async function getRecentChatLogs(userId: string, limit = 15): Promise<string> {
+    const db = await getDb();
     const { data: logs } = await db
         .from('messages')
         .select('role, content, session_id, created_at')

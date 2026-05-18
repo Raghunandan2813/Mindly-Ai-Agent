@@ -1,15 +1,19 @@
 // lib/embedService.ts
-// 100% FREE local vector embedding generator using transformers.js
-// Runs the all-MiniLM-L6-v2 model directly on your machine — no API key needed.
-import { pipeline, Pipeline, env } from '@xenova/transformers';
-
-// Configure Xenova to cache models in the writable /tmp folder in Serverless environments (like Vercel)
-env.cacheDir = '/tmp/.cache';
+// 100% FREE hybrid vector embedding generator using transformers.js dynamically
+// Runs the all-MiniLM-L6-v2 model directly on your machine locally, 
+// and resolves via Groq/Hugging Face cloud endpoints when running in production.
 
 let embeddingPipeline: any = null;
 
 async function getPipeline(): Promise<any> {
     if (!embeddingPipeline) {
+        // Dynamically import @xenova/transformers ONLY when offline fallback is triggered.
+        // This ensures Vercel never loads or crashes on the native C++ ONNX binaries!
+        const { pipeline, env } = await import('@xenova/transformers');
+        
+        // Configure Xenova to cache models in the writable /tmp folder
+        env.cacheDir = '/tmp/.cache';
+        
         // First call downloads the model (~23MB), subsequent calls reuse it
         embeddingPipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
     }
@@ -21,7 +25,7 @@ async function getPipeline(): Promise<any> {
  * Fully resilient 4-stage fallback architecture for perfect stability on Vercel:
  * 1. Groq Cloud API (Nomic-v1.5 Matryoshka sliced to 384) - Ultra-fast, stable, primary.
  * 2. Hugging Face Serverless API (all-MiniLM-L6-v2) - Free public cloud fallback.
- * 3. Local Transformers.js (all-MiniLM-L6-v2) - Offline local PC fallback.
+ * 3. Local Transformers.js (all-MiniLM-L6-v2) - Offline local PC fallback (dynamically loaded).
  * 4. Safe Zero Mock Array - Hard safety guard so the app never throws a 500 error.
  */
 export async function getEmbedding(text: string): Promise<number[]> {
