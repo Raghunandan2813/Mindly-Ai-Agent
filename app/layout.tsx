@@ -6,7 +6,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Memory Agent — AI That Remembers",
+  title: "Mindly AI — AI That Remembers",
   description: "An intelligent AI assistant with persistent memory across all conversations. Built with Next.js, Supabase, and Google Gemini.",
 };
 

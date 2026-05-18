@@ -171,7 +171,7 @@ export default function LoginPage() {
             <text x="30" y="86" fill="#404040" fontSize="8.5" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">01001101</text>
             <text x="30" y="97" fill="#222222" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">SYS_MEM</text>
           </svg>
-          <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">Memory Agent</h2>
+           <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">Mindly AI</h2>
           <p className="text-[#a3a3a3] text-center text-sm max-w-xs leading-relaxed">
             An AI that builds a living memory of every conversation — learning, remembering, and evolving with you.
           </p>
@@ -192,11 +192,24 @@ export default function LoginPage() {
         <div className="w-full max-w-sm relative z-10">
           
           {/* Mobile logo (hidden on desktop) */}
-          <div className="flex flex-col items-center mb-10 lg:hidden">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white to-neutral-600 flex items-center justify-center mb-3 shadow-lg">
-              <span className="text-2xl">🧠</span>
-            </div>
-            <h1 className="text-xl font-bold text-white">Memory Agent</h1>
+          <div className="flex flex-col items-center mb-6 lg:hidden">
+            <svg width="90" height="90" viewBox="0 0 120 120" fill="none" className="mb-4 drop-shadow-xl">
+              <rect x="10" y="10" width="100" height="100" rx="16" fill="#0d0d0d" stroke="#262626" strokeWidth="1.5" />
+              <path d="M10 35h100M10 60h100M10 85h100M35 10v100M60 10v100M85 10v100" stroke="#141414" strokeWidth="0.8" />
+              <circle cx="26" cy="24" r="3" fill="#333333" />
+              <circle cx="36" cy="24" r="3" fill="#333333" />
+              <circle cx="46" cy="24" r="3" fill="#333333" />
+              <path d="M26 46l8 6-8 6" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <line x1="38" y1="58" x2="48" y2="58" stroke="#a3a3a3" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M52 58h18l12-12h12M70 58l10 10h14" stroke="#525252" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M60 42l10-10h22" stroke="#404040" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="92" cy="46" r="4.5" fill="#ffffff" stroke="#000000" strokeWidth="1" />
+              <circle cx="94" cy="68" r="3.5" fill="#a3a3a3" stroke="#000000" strokeWidth="1" />
+              <circle cx="92" cy="32" r="3.5" fill="#737373" stroke="#000000" strokeWidth="1" />
+              <text x="30" y="86" fill="#404040" fontSize="8.5" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">01001101</text>
+              <text x="30" y="97" fill="#222222" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">SYS_MEM</text>
+            </svg>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Mindly AI</h1>
           </div>
 
           {/* Heading */}
