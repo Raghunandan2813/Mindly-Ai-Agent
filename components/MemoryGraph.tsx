@@ -104,7 +104,10 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[j].x - nodes[i].x;
         const dy = nodes[j].y - nodes[i].y;
-        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+        
+        // Safety Cushion: Clamp minimum distance to 30px to prevent division-by-zero 
+        // gravity explosion (which pushes coordinates to NaN and makes the graph disappear)
+        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 30);
         const force = REPULSION / (dist * dist);
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
