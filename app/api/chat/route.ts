@@ -246,9 +246,14 @@ Rules & Instructions:
       console.error('[Chat] Background graph extraction failed:', err);
     });
 
-    const memoriesCount = (memoryContext.match(/\[/g) || []).length;
+    const memoriesCount = (memoryContext.match(/(\*|\[)/g) || []).length;
 
-    return NextResponse.json({ reply, sessionId: sid, memoriesUsed: memoriesCount });
+    return NextResponse.json({ 
+      reply, 
+      sessionId: sid, 
+      memoriesUsed: memoriesCount,
+      recalledMemories: memoryContext && memoryContext !== 'No memories stored yet.' ? memoryContext : null
+    });
 
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : 'Unknown error';

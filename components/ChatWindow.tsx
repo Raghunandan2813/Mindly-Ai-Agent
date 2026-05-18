@@ -9,6 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  recalledMemories?: string;
 }
 
 interface ChatWindowProps {
@@ -85,6 +86,35 @@ export default function ChatWindow({
       .finally(() => setHistoryLoading(false));
   }, [sessionId, userId]);
 
+  // Global keyboard shortcuts (Cmd+K / Ctrl+K to clear/new session, Escape to unfocus input)
+  useEffect(() => {
+    // Focus input on initial mount
+    setTimeout(() => inputRef.current?.focus(), 150);
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Cmd+K or Ctrl+K: Clear session & start fresh
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        console.log('[Shortcut] Cmd/Ctrl + K: Starting a brand new chat session!');
+        setSessionId(null);
+        setMessages([]);
+        setMemoriesUsed(0);
+        setInput('');
+        setTimeout(() => inputRef.current?.focus(), 50);
+      }
+
+      // Escape: Unfocus prompt input
+      if (e.key === 'Escape') {
+        if (document.activeElement === inputRef.current) {
+          inputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [setSessionId, setMessages, setMemoriesUsed, setInput]);
+
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
@@ -119,6 +149,7 @@ export default function ChatWindow({
           role: 'assistant',
           content: data.reply,
           timestamp: new Date(),
+          recalledMemories: data.recalledMemories, // Bind dynamic long-term graph database facts
         };
         setLatestAiMessageId(newAiMsgId);
         setMessages(prev => [...prev, aiMsg]);
@@ -266,6 +297,7 @@ export default function ChatWindow({
                 content={msg.content}
                 timestamp={msg.timestamp}
                 isNew={msg.id === latestAiMessageId}
+                recalledMemories={msg.recalledMemories}
                 onTypingComplete={handleTypingComplete}
               />
             ))
