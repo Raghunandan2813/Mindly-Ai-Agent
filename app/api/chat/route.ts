@@ -82,10 +82,17 @@ export async function POST(req: NextRequest) {
     const provider = (process.env.PROVIDER || 'gemini').toLowerCase();
 
     // 1. Retrieve hybrid memory context (Knowledge Graph facts + chronological raw logs)
-    const [memoryContext, recentLogsContext] = await Promise.all([
+    // Reduce short-term logs from 15 to 6 to stay well within Groq's tight TPM constraints while preserving short-term context.
+    const [memoryContext, rawLogs] = await Promise.all([
       searchMemories(userId, message),
-      getRecentChatLogs(userId, 15) // Get the last 15 messages across all sessions
+      getRecentChatLogs(userId, 6)
     ]);
+
+    // Safe Token Trimmer: Keep the most recent 4000 characters of chat logs (approx 1000 tokens)
+    // to guarantee we never trigger TPM (Tokens Per Minute) limit exceptions in the serverless backend.
+    const recentLogsContext = rawLogs.length > 4000
+      ? '... [older logs truncated to fit rate limit] ...\n' + rawLogs.slice(-4000)
+      : rawLogs;
 
     const systemPrompt = `You are a helpful AI assistant with perfect memory of past conversations with this user across all sessions, dates, and chats.
 
