@@ -18,6 +18,7 @@ export default function Home() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [proactiveEnabled, setProactiveEnabled] = useState(false);
 
   const router = useRouter();
 
@@ -68,6 +69,14 @@ export default function Home() {
         if (data.userId) {
           setUserId(data.userId);
           setUserEmail(data.email || '');
+          
+          // Load proactive reflections configuration from API response
+          const enabled = data.proactiveEnabled === true;
+          setProactiveEnabled(enabled);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('mindly_proactive_enabled', enabled ? 'true' : 'false');
+          }
+          
           fetchSessions(data.userId, true); // true indicates initial page load
         } else {
           router.push('/login');
@@ -77,9 +86,32 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, [router, fetchSessions]);
 
+  const toggleProactive = async () => {
+    const nextVal = !proactiveEnabled;
+    setProactiveEnabled(nextVal);
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mindly_proactive_enabled', nextVal ? 'true' : 'false');
+    }
+
+    try {
+      // Synchronize with server Auth User Metadata so backend cron can read this status
+      await fetch('/api/auth/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proactive_enabled: nextVal })
+      });
+      // Force trigger an event dispatch to notify ChatWindow immediately!
+      window.dispatchEvent(new Event('storage'));
+    } catch (err) {
+      console.error('Failed to sync proactive settings profile:', err);
+    }
+  };
+
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('mindly_last_session_id');
+      localStorage.removeItem('mindly_proactive_enabled');
     }
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -203,6 +235,28 @@ export default function Home() {
 
           {/* Sidebar Footer */}
           <div className="p-4 border-t border-[#151515] bg-[#0c0c0c] flex flex-col gap-3.5">
+            {/* Proactive Reflections opt-in Toggle Switch Card */}
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/[0.03] to-orange-500/[0.01] border border-amber-500/10 flex items-center justify-between shadow-sm">
+              <div>
+                <div className="text-[0.7rem] font-bold text-neutral-300 flex items-center gap-1.5 uppercase font-mono tracking-wide">
+                  <span className={`w-1.5 h-1.5 rounded-full ${proactiveEnabled ? 'bg-amber-400 animate-pulse' : 'bg-neutral-600'}`} />
+                  Proactive reflections
+                </div>
+                <div className="text-[0.55rem] text-neutral-500 mt-0.5 leading-relaxed">
+                  Reflect on thoughts autonomously
+                </div>
+              </div>
+              <button
+                onClick={toggleProactive}
+                className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center ${
+                  proactiveEnabled ? 'bg-amber-500 justify-end' : 'bg-neutral-800 justify-start'
+                }`}
+                title={proactiveEnabled ? "Disable Proactive reflections" : "Enable Proactive reflections"}
+              >
+                <div className="w-4 h-4 rounded-full bg-black shadow-sm" />
+              </button>
+            </div>
+
             {/* User Profile */}
             <div className="flex items-center gap-3 px-1">
               <div className="w-8 h-8 rounded-full bg-[#181818] border border-[#2a2a2a] flex items-center justify-center font-bold text-xs text-neutral-300">

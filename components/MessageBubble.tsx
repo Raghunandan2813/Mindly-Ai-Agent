@@ -172,20 +172,22 @@ interface Token {
 
 function tokenize(code: string, language: string): Token[] {
   const lang = language.toLowerCase();
-  
-  if (!['js', 'jsx', 'ts', 'tsx', 'javascript', 'typescript', 'python', 'py', 'sql', 'html', 'css', 'json'].includes(lang)) {
-    return [{ text: code, type: 'plain' }];
-  }
-
   let masterRegex;
   
-  if (['py', 'python'].includes(lang)) {
-    masterRegex = /(#.*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b(?:def|class|return|import|from|as|if|else|elif|for|while|in|is|not|and|or|try|except|with|print|True|False|None)\b)|(\b\d+(?:\.\d+)?\b)|(\b[a-zA-Z_]\w*(?=\s*\())/g;
-  } else if (lang === 'sql') {
+  // Categorize languages by their structural comment delimiters and keywords
+  const hashCommentLangs = ['py', 'python', 'bash', 'sh', 'shell', 'zsh', 'yaml', 'yml', 'toml', 'dockerfile', 'docker', 'r', 'perl', 'pl'];
+  const sqlLangs = ['sql', 'psql', 'mysql', 'sqlite'];
+
+  if (hashCommentLangs.includes(lang)) {
+    // 1. Languages using '#' comments (Python, Shell scripts, YAML config, Dockerfiles, etc.)
+    masterRegex = /(#.*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b(?:def|class|return|import|from|as|if|else|elif|for|while|in|is|not|and|or|try|except|with|print|True|False|None|sudo|echo|cd|ls|mkdir|rm|cp|mv|chmod|chown|grep|awk|sed|curl|wget|tar|zip|unzip|git|npm|pip|docker|run|cmd|entrypoint|expose|env|copy|add|volume|user|workdir|from)\b)|(\b\d+(?:\.\d+)?\b)|(\b[a-zA-Z_]\w*(?=\s*\())/g;
+  } else if (sqlLangs.includes(lang)) {
+    // 2. SQL database languages (using '--' comments)
     masterRegex = /(--.*)|('(?:\\.|[^'\\])*')|(\b(?:SELECT|FROM|WHERE|INSERT|INTO|UPDATE|SET|DELETE|CREATE|TABLE|JOIN|ON|AND|OR|GROUP|BY|ORDER|LIMIT|RETURNING|LEFT|RIGHT|INNER|OUTER|AS|DEFAULT|NULL|TRUE|FALSE|TEXT|INTEGER|TIMESTAMP|UUID|VECTOR)\b)/gi;
   } else {
-    // JS/TS/JSON/CSS default tokenizer
-    masterRegex = /(\/\/.*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b(?:const|let|var|function|return|import|export|from|class|extends|if|else|for|while|new|this|async|await|try|catch|true|false|null|undefined|interface|type|public|private|static|readonly|string|number|boolean|any|void)\b)|(\b\d+(?:\.\d+)?\b)|(\b[a-zA-Z_]\w*(?=\s*\())/g;
+    // 3. C-Style languages (JS, TS, Java, C++, C#, C, Go, Rust, PHP, Swift, Kotlin, Dart) + Universal Fallback
+    // This guarantees that even if the AI outputs code in an unspecified language, they still get beautiful highlighted blocks!
+    masterRegex = /(\/\/.*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b(?:const|let|var|function|return|import|export|from|class|extends|if|else|for|while|new|this|async|await|try|catch|true|false|null|undefined|interface|type|public|private|static|readonly|string|number|boolean|any|void|struct|fn|func|int|float|double|char|bool|namespace|using|impl|pub|mut|use)\b)|(\b\d+(?:\.\d+)?\b)|(\b[a-zA-Z_]\w*(?=\s*\())/g;
   }
 
   const tokens: Token[] = [];

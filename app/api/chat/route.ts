@@ -26,22 +26,22 @@ const OPENROUTER_FREE_FALLBACKS = [
 
 function selectGroqModel(message: string): string {
   const lowercaseMsg = message.toLowerCase();
-  
+
   // Complex tasks heuristics (e.g. coding, planning, system design, math)
   const complexKeywords = [
-    'write a code', 'program', 'function', 'class in', 'algorithm', 
-    'analyze', 'compare', 'difference between', 'elaborate on', 
+    'write a code', 'program', 'function', 'class in', 'algorithm',
+    'analyze', 'compare', 'difference between', 'elaborate on',
     'explain in detail', 'architect', 'design a system', 'complex math',
     'solve', 'prove', 'derivation', 'step by step explanation'
   ];
-  
+
   const isComplex = complexKeywords.some(keyword => lowercaseMsg.includes(keyword)) || message.length > 300;
-  
+
   if (isComplex) {
     console.log(`[Groq Model Tiering] Query classified as COMPLEX. Routing to llama-3.3-70b-versatile...`);
     return 'llama-3.3-70b-versatile';
   }
-  
+
   console.log(`[Groq Model Tiering] Query classified as SIMPLE. Routing to llama-3.1-8b-instant...`);
   return 'llama-3.1-8b-instant';
 }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       const db = supabaseAdmin || supabase;
       const rateLimitThreshold = Number(process.env.RATE_LIMIT_MAX_PER_MINUTE) || 20;
       const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
-      
+
       const { count } = await db
         .from('messages')
         .select('*', { count: 'exact', head: true })
@@ -82,10 +82,11 @@ export async function POST(req: NextRequest) {
     const provider = (process.env.PROVIDER || 'gemini').toLowerCase();
 
     // 1. Retrieve hybrid memory context (Knowledge Graph facts + chronological raw logs)
-    // Reduce short-term logs from 15 to 6 to stay well within Groq's tight TPM constraints while preserving short-term context.
+    // We retrieve up to 20 logs to guarantee we cover yesterday's context. The Safe Token Trimmer
+    // below will keep the overall prompt size under 4000 characters to safeguard Groq's TPM limits.
     const [memoryContext, rawLogs] = await Promise.all([
-      searchMemories(userId, message),
-      getRecentChatLogs(userId, 6)
+      searchMemories(userId, message, sid),
+      getRecentChatLogs(userId, 20, sid)
     ]);
 
     // Safe Token Trimmer: Keep the most recent 4000 characters of chat logs (approx 1000 tokens)
@@ -94,22 +95,28 @@ export async function POST(req: NextRequest) {
       ? '... [older logs truncated to fit rate limit] ...\n' + rawLogs.slice(-4000)
       : rawLogs;
 
+    const currentDateTime = new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
+
     const systemPrompt = `You are a helpful AI assistant with perfect memory of past conversations with this user across all sessions, dates, and chats.
+
+Current Date and Time: ${currentDateTime}
 
 To help you remember, here is the context retrieved from the database for this user:
 
-=== LONG-TERM MEMORY (Knowledge Graph Facts) ===
+=== LONG-TERM MEMORY (Knowledge Graph Facts or Date-Filtered Memories) ===
 ${memoryContext}
-================================================
+===========================================================================
 
-=== SHORT-TERM MEMORY (Recent Conversation Logs Across Sessions) ===
+=== SHORT-TERM MEMORY (Recent Conversation Logs Across Sessions with Timestamps) ===
 ${recentLogsContext}
-=====================================================================
+=====================================================================================
 
 Rules & Instructions:
-- Carefully inspect BOTH the Long-Term Knowledge Graph and the Short-Term Recent Logs context above.
-- If the user asks about what was discussed in their previous sessions or recent turns (e.g., ticket comparisons, trip planning, yesterday's chat, etc.), refer directly to the "SHORT-TERM MEMORY" logs above and summarize it perfectly.
-- If asked personal details, facts, or preferences, use the "LONG-TERM MEMORY" knowledge graph to personalize your answer.
+- Carefully inspect BOTH the Long-Term Knowledge Graph/Date-Filtered Memories and the Short-Term Recent Logs context above.
+- The memories and logs are annotated with clear date labels (e.g. [Yesterday, May 18], [Wednesday, May 13, 2026], [Today, May 19], etc.). Compare these timestamps with the "Current Date and Time" (${currentDateTime}) above to correctly determine which discussions happened "today", "yesterday", or on previous days!
+- When the user asks about a specific date or time period (e.g., "yesterday", "last week", "May 3rd"), you MUST ONLY reference memories and messages that have that exact date label or match that specific time period. Do NOT mix or combine memories from different dates or today's current session.
+- If no memories exist for that date or time period, you MUST explicitly say: "I don't have any record of conversations from that date."
+- If asked personal details, facts, or preferences, use the knowledge graph to personalize your answer.
 - Always sound natural and responsive. Avoid referencing internal details like "Session IDs" or repeating context tags in your reply. Just talk to the user like a friend with an amazing memory.`;
 
     let reply = '';
@@ -118,7 +125,7 @@ Rules & Instructions:
     if (provider === 'gemini') {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
-      
+
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
         model: 'gemini-2.0-flash',
@@ -134,7 +141,7 @@ Rules & Instructions:
       // Try the configured model first, then fall back if it fails
       const preferredModel = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
       const modelsToTry = [preferredModel, ...OPENROUTER_FREE_FALLBACKS.filter(m => m !== preferredModel)];
-      
+
       let success = false;
       let lastError = '';
 
@@ -281,9 +288,9 @@ Rules & Instructions:
 
     const memoriesCount = (memoryContext.match(/(\*|\[)/g) || []).length;
 
-    return NextResponse.json({ 
-      reply, 
-      sessionId: sid, 
+    return NextResponse.json({
+      reply,
+      sessionId: sid,
       memoriesUsed: memoriesCount,
       recalledMemories: memoryContext && memoryContext !== 'No memories stored yet.' ? memoryContext : null
     });

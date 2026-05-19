@@ -3,6 +3,8 @@
 'use client';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import MessageBubble from './MessageBubble';
+import MicButton from './MicButton';
+import InsightBanner, { Insight } from './InsightBanner';
 
 interface Message {
   id: string;
@@ -35,11 +37,22 @@ export default function ChatWindow({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [memoriesUsed, setMemoriesUsed] = useState(0);
   const [latestAiMessageId, setLatestAiMessageId] = useState<string | null>(null);
+  const [activeInsight, setActiveInsight] = useState<Insight | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
   // Track if we need to bypass history reload when creating a session on the fly
   const skipHistoryFetchRef = useRef(false);
+
+  // Clean markdown formatting before speaking replies out loud
+  const cleanMarkdownForSpeech = (text: string) => {
+    return text
+      .replace(/```[\s\S]*?```/g, '[code block]') // skip code blocks
+      .replace(/`([^`]+)`/g, '$1') // remove single backticks
+      .replace(/[*#_\-\[\]]/g, '') // remove asterisks, hash signs, brackets, dashes
+      .trim();
+  };
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -86,6 +99,78 @@ export default function ChatWindow({
       .finally(() => setHistoryLoading(false));
   }, [sessionId, userId]);
 
+  // Fetch active proactive insights if user is opted in
+  useEffect(() => {
+    if (!userId) return;
+
+    const checkAndFetchInsights = () => {
+      const optedIn = localStorage.getItem('mindly_proactive_enabled') === 'true';
+      if (!optedIn) {
+        setActiveInsight(null);
+        return;
+      }
+
+      fetch(`/api/insights?userId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.insights && data.insights.length > 0) {
+            setActiveInsight(data.insights[0]);
+          } else {
+            setActiveInsight(null);
+          }
+        })
+        .catch(err => console.error('[Proactive UI] Insights fetch failed:', err));
+    };
+
+    checkAndFetchInsights();
+
+    // Listen to changes in localStorage settings toggles dynamically
+    window.addEventListener('storage', checkAndFetchInsights);
+
+    // Re-check periodically in case cron job creates an insight in the background
+    const interval = setInterval(checkAndFetchInsights, 60000);
+    return () => {
+      window.removeEventListener('storage', checkAndFetchInsights);
+      clearInterval(interval);
+    };
+  }, [userId]);
+
+  const handleInsightAction = async (message: string, suggestion: string) => {
+    if (!activeInsight) return;
+    const id = activeInsight.id;
+
+    // Build the trigger prompt contextually
+    const actionPromptText = `Regarding your active reflection: "${message}". ${suggestion}`;
+    setInput(actionPromptText);
+
+    // Dynamic focus & expand height
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.style.height = 'auto';
+        inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 160) + 'px';
+      }
+    }, 100);
+
+    // Call POST API to mark as permanently dismissed
+    await fetch('/api/insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, insightId: id })
+    });
+
+    setActiveInsight(null);
+  };
+
+  const handleInsightDismiss = async (id: string) => {
+    await fetch('/api/insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, insightId: id })
+    });
+    setActiveInsight(null);
+  };
+
   // Global keyboard shortcuts (Cmd+K / Ctrl+K to clear/new session, Escape to unfocus input)
   useEffect(() => {
     // Focus input on initial mount
@@ -115,9 +200,14 @@ export default function ChatWindow({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [setSessionId, setMessages, setMemoriesUsed, setInput]);
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (textOverride?: string) => {
+    const text = (typeof textOverride === 'string' ? textOverride : input).trim();
     if (!text || loading) return;
+
+    // 🔴 Cancel any currently active browser speech synthesis
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -336,6 +426,13 @@ export default function ChatWindow({
       {/* ─── Floating Input Bar ─── */}
       <div className="border-t border-[#151515] bg-black/90 backdrop-blur-xl px-5 py-4">
         <div className="max-w-[800px] mx-auto">
+          {activeInsight && (
+            <InsightBanner
+              insight={activeInsight}
+              onAction={handleInsightAction}
+              onDismiss={handleInsightDismiss}
+            />
+          )}
           <div className="flex items-end gap-3 bg-[#0c0c0c] border border-[#1f1f1f] rounded-2xl px-4 py-2.5 focus-within:border-[#333333] transition-colors">
             <textarea
               ref={inputRef}
@@ -347,8 +444,25 @@ export default function ChatWindow({
               className="flex-1 resize-none bg-transparent text-[0.9rem] text-[#e5e5e5] placeholder-neutral-700 outline-none min-h-[28px] max-h-[160px] leading-relaxed py-0.5"
               disabled={loading || historyLoading}
             />
+
+            {/* 🎙️ Whisper Voice Recorder Trigger */}
+            <MicButton
+              onTranscriptReceived={(text) => {
+                setInput(text);
+                // Automatically focus and auto-expand the input textarea for review
+                setTimeout(() => {
+                  if (inputRef.current) {
+                    inputRef.current.focus();
+                    inputRef.current.style.height = 'auto';
+                    inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 160) + 'px';
+                  }
+                }, 50);
+              }}
+              isDisabled={loading || historyLoading}
+            />
+
             <button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={!input.trim() || loading || historyLoading}
               className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-20 disabled:cursor-not-allowed bg-white hover:bg-neutral-200 text-black"
             >
