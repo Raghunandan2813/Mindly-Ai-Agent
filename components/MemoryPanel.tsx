@@ -74,7 +74,7 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
   }
 
   return (
-    <div className="space-y-6 bg-black text-[#f5f5f5]">
+    <div className="space-y-6 bg-[var(--bg-primary)] text-[var(--text-primary)]">
       {/* Search */}
       <div className="relative">
         <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -92,11 +92,11 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="memory-pill">{nodes.length} nodes</span>
         <span className="memory-pill">{edges.length} connections</span>
-        <div className="w-px h-4 bg-[#333333] mx-1" />
+        <div className="w-px h-4 bg-[var(--border)] mx-1" />
         <button
           onClick={() => setFilterType(null)}
           className={`px-2 py-1 rounded-lg transition-colors ${
-            !filterType ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-[#1c1c1c]'
+            !filterType ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-input)]'
           }`}
         >
           All
@@ -106,7 +106,7 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
             key={type}
             onClick={() => setFilterType(filterType === type ? null : type)}
             className={`px-2 py-1 rounded-lg transition-colors flex items-center gap-1 ${
-              filterType === type ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-[#1c1c1c]'
+              filterType === type ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-input)]'
             }`}
           >
             <span>{TYPE_ICONS[type] || '📄'}</span>
@@ -118,14 +118,14 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
       {/* Empty state */}
       {filtered.length === 0 && (
         <div className="text-center py-16">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#0d0d0d] border border-[#222222] flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)] flex items-center justify-center">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="2" width="20" height="20" rx="5" fill="#000000" stroke="#333333" strokeWidth="1.2" />
-              <path d="M6 8l3 3-3 3" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="10" y1="14" x2="14" y2="14" stroke="#a3a3a3" strokeWidth="1.5" />
+              <rect x="2" y="2" width="20" height="20" rx="5" fill="var(--bg-primary)" stroke="var(--border)" strokeWidth="1.2" />
+              <path d="M6 8l3 3-3 3" stroke="var(--text-primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <line x1="10" y1="14" x2="14" y2="14" stroke="var(--text-secondary)" strokeWidth="1.5" />
             </svg>
           </div>
-          <p className="text-neutral-500 text-sm">
+          <p className="text-[var(--text-muted)] text-sm">
             {search ? 'No nodes match your search' : 'No memory nodes yet — start chatting to build your knowledge graph'}
           </p>
         </div>
@@ -142,7 +142,7 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
           return (
             <div
               key={node.id}
-              className="glass-card glass-card-hover px-4 py-3 animate-fade-in-up bg-[#0c0c0c] border border-[#222222] rounded-xl"
+              className="glass-card glass-card-hover px-4 py-3 animate-fade-in-up bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl"
               style={{ animationDelay: `${idx * 0.03}s` }}
             >
               <div className="flex items-start justify-between gap-3">
@@ -150,19 +150,19 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
                   {/* Node header */}
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm">{TYPE_ICONS[node.node_type] || '📄'}</span>
-                    <span className="text-sm font-semibold text-white">{node.label}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1c1c1c] border border-[#333333] text-neutral-400 uppercase tracking-wider">
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">{node.label}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-secondary)] uppercase tracking-wider">
                       {node.node_type}
                     </span>
                     {connections > 0 && (
-                      <span className="text-[10px] text-neutral-500">
+                      <span className="text-[10px] text-[var(--text-muted)]">
                         {connections} link{connections !== 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
 
                   {/* Node content */}
-                  <p className="text-xs text-neutral-400 leading-relaxed break-words">
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed break-words">
                     {node.content}
                   </p>
 
@@ -172,20 +172,20 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
                       {connectedEdges.slice(0, 5).map(edge => (
                         <span
                           key={edge.id}
-                          className="text-[9px] px-1.5 py-0.5 rounded bg-[#141414] border border-[#222222] text-neutral-500"
+                          className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)]"
                         >
                           {edge.relation}
                         </span>
                       ))}
                       {connectedEdges.length > 5 && (
-                        <span className="text-[9px] text-neutral-600">+{connectedEdges.length - 5} more</span>
+                        <span className="text-[9px] text-[var(--text-muted)]">+{connectedEdges.length - 5} more</span>
                       )}
                     </div>
                   )}
 
                   {/* Timestamp */}
                   <div className="mt-2">
-                    <span className="text-[10px] text-neutral-600">
+                    <span className="text-[10px] text-[var(--text-muted)]">
                       {new Date(node.created_at).toLocaleDateString('en-IN', {
                         day: 'numeric', month: 'short', year: 'numeric',
                       })}
@@ -198,7 +198,7 @@ export default function MemoryPanel({ nodes, edges, onDelete, loading }: MemoryP
                   <button
                     onClick={() => handleDelete(node.id)}
                     disabled={deleting === node.id}
-                    className="flex-shrink-0 p-1.5 rounded-lg hover:bg-white/10 text-neutral-600 hover:text-white transition-colors"
+                    className="flex-shrink-0 p-1.5 rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     title="Delete node"
                   >
                     {deleting === node.id ? (

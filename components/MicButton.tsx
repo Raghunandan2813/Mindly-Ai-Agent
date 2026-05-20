@@ -278,7 +278,7 @@ export default function MicButton({ onTranscriptReceived, isDisabled = false }: 
         className="text-[0.7rem] bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 font-mono rounded-lg px-2 py-1.5 focus:outline-none transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
       >
         {LANGUAGES.map((l) => (
-          <option key={l.code} value={l.code} className="bg-black text-white">
+          <option key={l.code} value={l.code} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
             {l.label}
           </option>
         ))}
@@ -309,10 +309,10 @@ export default function MicButton({ onTranscriptReceived, isDisabled = false }: 
           !isSupported
             ? 'bg-zinc-950 border-zinc-900 text-zinc-800 cursor-not-allowed'
             : isRecording
-            ? 'bg-red-600 border-red-500 text-white scale-105 shadow-lg shadow-red-500/30'
+            ? 'bg-red-600 border-red-500 text-[var(--text-primary)] scale-105 shadow-lg shadow-red-500/30'
             : isTranscribing
             ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
-            : 'bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800/80 active:scale-95 shadow-md shadow-black/20'
+            : 'bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-[var(--text-primary)] hover:bg-zinc-800/80 active:scale-95 shadow-md shadow-black/20'
         }`}
       >
         {isTranscribing ? (

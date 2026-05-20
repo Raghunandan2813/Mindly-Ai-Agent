@@ -43,3 +43,6 @@ next-env.d.ts
 # logs
 *.log
 groq_error.log
+
+# temporary workspace scripts
+scratch/

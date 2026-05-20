@@ -2,6 +2,8 @@
 // Lightweight message storage (no embeddings) + graph-based memory retrieval.
 import { supabaseAdmin, supabase, createSupabaseServer } from './supabase';
 import { searchGraphMemory } from './graphMemoryService';
+import { redactSensitiveData } from './security';
+import { logRedactionEvent } from './redactionLog';
 
 // Dynamic client resolver to ensure we are always authenticated on Vercel
 async function getDb() {
@@ -20,16 +22,43 @@ export interface MemoryRecord {
 /**
  * Save a raw message to the messages table (no embedding — lightweight).
  */
+export interface SaveMessageOptions {
+    redactionEnabled?: boolean;
+}
+
 export async function saveMessage(
     userId: string,
     role: string,
     content: string,
-    sessionId: string
+    sessionId: string,
+    isFlagged = false,
+    flagReason?: string,
+    options?: SaveMessageOptions
 ): Promise<void> {
     const db = await getDb();
+    const shouldRedact = options?.redactionEnabled !== false;
+
+    let textToSave = content;
+    let wasRedacted = false;
+
+    if (shouldRedact) {
+        const { redacted, wasRedacted: didRedact, redactedTypes } = redactSensitiveData(content);
+        textToSave = redacted;
+        wasRedacted = didRedact;
+        if (didRedact) {
+            console.warn(`[Security Redaction] Redacted sensitive details for user ${userId}:`, redactedTypes);
+            logRedactionEvent(userId, sessionId, redactedTypes).catch(() => { });
+        }
+    }
+
     await db.from('messages').insert({
-        user_id: userId, role, content,
-        session_id: sessionId
+        user_id: userId,
+        role,
+        content: textToSave,
+        session_id: sessionId,
+        is_flagged: isFlagged,
+        flag_reason: flagReason,
+        was_redacted: wasRedacted
     });
 }
 
@@ -60,6 +89,18 @@ export async function searchMemories(
     query: string,
     sessionId?: string
 ): Promise<string> {
+    // 1. Strict Privacy Check: Check memory_enabled status before retrieval
+    try {
+        const db = await getDb();
+        const { data: userData } = await db.auth.admin.getUserById(userId);
+        if (userData?.user && userData.user.user_metadata?.memory_enabled === false) {
+            console.log(`[Memory Search] Privacy Enforcement: Memory is disabled for user ${userId}. Returning empty context.`);
+            return '';
+        }
+    } catch (err) {
+        console.warn('[Memory Search] Skipping metadata privacy pre-check due to auth limitation:', err);
+    }
+
     const dateRange = detectDateRange(query);
 
     if (dateRange) {
@@ -70,6 +111,7 @@ export async function searchMemories(
             .from('messages')
             .select('role, content, created_at, session_id')
             .eq('user_id', userId)
+            .eq('is_flagged', false)
             .gte('created_at', dateRange.from.toISOString())
             .lte('created_at', dateRange.to.toISOString())
             .order('created_at', { ascending: true });
@@ -98,9 +140,24 @@ export async function searchMemories(
         return formatted.join('\n');
     }
 
-    // No time reference -> use semantic knowledge graph search
-    console.log(`[Memory Search] No date reference in query "${query}". Using semantic knowledge graph...`);
-    return searchGraphMemory(userId, query);
+    // No time reference -> use semantic knowledge graph search + summaries
+    console.log(`[Memory Search] No date reference in query "${query}". Searching summaries + knowledge graph...`);
+
+    try {
+        const { searchSessionSummaries, formatSummaryMatches } = await import('./summarization/retriever');
+        const summaryMatches = await searchSessionSummaries(userId, query);
+        const summaryContext = formatSummaryMatches(summaryMatches);
+
+        const graphContext = await searchGraphMemory(userId, query);
+
+        if (summaryContext) {
+            return `${summaryContext}\n\n${graphContext}`;
+        }
+        return graphContext;
+    } catch (err: any) {
+        console.error('[Memory Search] Summarized memory search fallback triggered:', err.message);
+        return searchGraphMemory(userId, query);
+    }
 }
 
 /**
@@ -112,7 +169,8 @@ export async function getRecentChatLogs(userId: string, limit = 20, excludeSessi
     let query = db
         .from('messages')
         .select('role, content, session_id, created_at')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .eq('is_flagged', false);
 
     if (excludeSessionId) {
         query = query.neq('session_id', excludeSessionId);

@@ -41,6 +41,16 @@ const NODE_COLORS: Record<string, string> = {
   attribute: '#8a8a8a',
 };
 
+const LIGHT_NODE_COLORS: Record<string, string> = {
+  person: '#000000',
+  pet: '#404040',
+  preference: '#737373',
+  fact: '#a3a3a3',
+  skill: '#262626',
+  location: '#525252',
+  attribute: '#737373',
+};
+
 export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDeleteNode }: MemoryGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
@@ -156,12 +166,26 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
     // ---- Render ----
     ctx.clearRect(0, 0, w, h);
 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const cBg = isLight ? '#f5f5f5' : '#000000';
+    const cGrid = isLight ? '#e5e5e5' : '#0f0f0f';
+    const cEdgeNormal = isLight ? '#d4d4d4' : '#333333';
+    const cEdgeHighlight = isLight ? '#000000' : '#ffffff';
+    const cEdgeTextNormal = isLight ? '#737373' : '#404040';
+    const cEdgeTextHighlight = isLight ? '#171717' : '#d4d4d4';
+    const cNodeBgNormal = isLight ? '#ffffff' : '#141414';
+    const cNodeSelected = isLight ? '#000000' : '#ffffff';
+    const cNodeConnected = isLight ? '#a3a3a3' : '#888888';
+    const cNodeTextSelected = isLight ? '#ffffff' : '#000000';
+    const cNodeBadge = isLight ? '#737373' : '#525252';
+    const themeColors = isLight ? LIGHT_NODE_COLORS : NODE_COLORS;
+
     // Background
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = cBg;
     ctx.fillRect(0, 0, w, h);
 
     // Subtle grid
-    ctx.strokeStyle = '#0f0f0f';
+    ctx.strokeStyle = cGrid;
     ctx.lineWidth = 0.5;
     for (let x = 0; x < w; x += 40) {
       ctx.beginPath();
@@ -188,14 +212,14 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
       ctx.beginPath();
       ctx.moveTo(source.x, source.y);
       ctx.lineTo(target.x, target.y);
-      ctx.strokeStyle = isHighlighted ? '#ffffff' : '#333333';
+      ctx.strokeStyle = isHighlighted ? cEdgeHighlight : cEdgeNormal;
       ctx.lineWidth = isHighlighted ? 2 : 1;
       ctx.stroke();
 
       // Edge label at midpoint
       const mx = (source.x + target.x) / 2;
       const my = (source.y + target.y) / 2;
-      ctx.fillStyle = isHighlighted ? '#d4d4d4' : '#404040';
+      ctx.fillStyle = isHighlighted ? cEdgeTextHighlight : cEdgeTextNormal;
       ctx.font = '9px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(edge.relation, mx, my - 4);
@@ -211,7 +235,7 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
       );
       
       const radius = node.label === 'user' ? 22 : (isSelected || isHovered ? 18 : 14);
-      const color = NODE_COLORS[node.node_type] || '#737373';
+      const color = themeColors[node.node_type] || (isLight ? '#525252' : '#737373');
 
       // Glow for selected/connected nodes
       if (isSelected || isConnected) {
@@ -224,14 +248,14 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
       // Node circle
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = isSelected ? '#ffffff' : (isHovered ? color : '#141414');
+      ctx.fillStyle = isSelected ? cNodeSelected : (isHovered ? color : cNodeBgNormal);
       ctx.fill();
-      ctx.strokeStyle = isSelected ? '#ffffff' : (isConnected ? '#888888' : '#333333');
+      ctx.strokeStyle = isSelected ? cNodeSelected : (isConnected ? cNodeConnected : cEdgeNormal);
       ctx.lineWidth = isSelected ? 2.5 : 1.5;
       ctx.stroke();
 
       // Node label
-      ctx.fillStyle = isSelected ? '#000000' : color;
+      ctx.fillStyle = isSelected ? cNodeTextSelected : color;
       ctx.font = `${isSelected ? 'bold ' : ''}11px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -240,7 +264,7 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
       ctx.fillText(label, node.x, node.y);
 
       // Type badge below
-      ctx.fillStyle = '#525252';
+      ctx.fillStyle = cNodeBadge;
       ctx.font = '8px monospace';
       ctx.fillText(node.node_type, node.x, node.y + radius + 10);
     }
@@ -384,7 +408,7 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
   }, [getNodeAtPosition]);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] bg-black rounded-xl border border-[#222222] overflow-hidden">
+    <div className="relative w-full h-full min-h-[500px] bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] overflow-hidden">
       <canvas
         ref={canvasRef}
         className="w-full h-full"
@@ -399,24 +423,24 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
 
       {/* Selected node info panel */}
       {selectedNode && (
-        <div className="absolute bottom-4 left-4 right-4 bg-[#0c0c0c] border border-[#333333] rounded-xl p-4 animate-fade-in-up">
+        <div className="absolute bottom-4 left-4 right-4 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 animate-fade-in-up">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1c1c1c] border border-[#333333] text-neutral-400 uppercase tracking-wider">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-secondary)] uppercase tracking-wider">
                 {selectedNode.node_type}
               </span>
-              <span className="text-sm font-semibold text-white">{selectedNode.label}</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">{selectedNode.label}</span>
             </div>
             {onDeleteNode && selectedNode.label !== 'user' && (
               <button
                 onClick={() => onDeleteNode(selectedNode.id)}
-                className="text-xs text-neutral-500 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
               >
                 Delete
               </button>
             )}
           </div>
-          <p className="text-xs text-neutral-400 leading-relaxed">{selectedNode.content}</p>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{selectedNode.content}</p>
         </div>
       )}
 
@@ -424,8 +448,8 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
       {rawNodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-neutral-500 text-sm">No memory nodes yet</p>
-            <p className="text-neutral-600 text-xs mt-1">Start chatting to build your knowledge graph</p>
+            <p className="text-[var(--text-muted)] text-sm">No memory nodes yet</p>
+            <p className="text-[var(--text-muted)] text-xs mt-1">Start chatting to build your knowledge graph</p>
           </div>
         </div>
       )}

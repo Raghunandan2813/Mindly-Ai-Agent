@@ -149,9 +149,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex text-[#f5f5f5] bg-black">
+    <div className="min-h-screen flex text-[var(--text-primary)] bg-[var(--bg-primary)]">
       {/* Left — Animated neural network (Monochrome) */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-black border-r border-[#222222]">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[var(--bg-primary)] border-r border-[var(--border)]">
         <NeuralCanvas />
         <div className="relative z-10 flex flex-col justify-center items-center w-full px-12">
           {/* Cybernetic Developer Terminal Neural Logo */}
@@ -171,7 +171,7 @@ export default function LoginPage() {
             <text x="30" y="86" fill="#404040" fontSize="8.5" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">01001101</text>
             <text x="30" y="97" fill="#222222" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">SYS_MEM</text>
           </svg>
-           <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">Mindly AI</h2>
+           <h2 className="text-4xl font-bold text-[var(--text-primary)] mb-3 tracking-tight">Mindly AI</h2>
           <p className="text-[#a3a3a3] text-center text-sm max-w-xs leading-relaxed">
             An AI that builds a living memory of every conversation — learning, remembering, and evolving with you.
           </p>
@@ -179,7 +179,7 @@ export default function LoginPage() {
           {/* Feature pills */}
           <div className="flex flex-wrap justify-center gap-2 mt-8">
             {['Semantic Recall', 'Multi-Session', 'Private & Encrypted', 'Zero Data Leaks'].map(f => (
-              <span key={f} className="px-3 py-1.5 rounded-full text-xs font-medium border border-[#222222] text-[#a3a3a3] bg-[#0d0d0d]/80">
+              <span key={f} className="px-3 py-1.5 rounded-full text-xs font-medium border border-[var(--border)] text-[#a3a3a3] bg-[var(--bg-secondary)]/80">
                 {f}
               </span>
             ))}
@@ -188,7 +188,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right — Login form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 bg-[#000000] relative">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 bg-[var(--bg-primary)] relative">
         <div className="w-full max-w-sm relative z-10">
           
           {/* Mobile logo (hidden on desktop) */}
@@ -209,12 +209,12 @@ export default function LoginPage() {
               <text x="30" y="86" fill="#404040" fontSize="8.5" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">01001101</text>
               <text x="30" y="97" fill="#222222" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">SYS_MEM</text>
             </svg>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Mindly AI</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Mindly AI</h1>
           </div>
 
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-white tracking-tight">
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">
               {isSignup ? 'Create account' : 'Sign in'}
             </h1>
             <p className="text-[var(--text-muted)] text-sm mt-1.5">
@@ -233,8 +233,8 @@ export default function LoginPage() {
               {isSignup && <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Min 8 characters · uppercase · lowercase · number</p>}
             </div>
 
-            {error && <div className="px-4 py-2.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-200 text-xs">{error}</div>}
-            {success && <div className="px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs">{success}</div>}
+            {error && <div className="px-4 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)] text-xs">{error}</div>}
+            {success && <div className="px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-[var(--text-primary)] text-xs">{success}</div>}
 
             <button type="submit" disabled={loading} className="btn-primary w-full text-sm h-12">
               {loading ? 'Authenticating...' : isSignup ? 'Create Account →' : 'Sign In →'}
@@ -253,7 +253,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full h-12 rounded-xl border border-[#222222] bg-[#0d0d0d] hover:bg-[#141414] hover:border-[#555555] transition-all flex items-center justify-center gap-3 text-sm font-semibold text-white"
+            className="w-full h-12 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] hover:border-[#555555] transition-all flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-primary)]"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -266,7 +266,7 @@ export default function LoginPage() {
 
           <p className="mt-8 text-center text-xs text-[var(--text-muted)]">
             {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button onClick={() => { setIsSignup(!isSignup); setError(''); setSuccess(''); }} className="text-white hover:underline font-semibold transition-colors">
+            <button onClick={() => { setIsSignup(!isSignup); setError(''); setSuccess(''); }} className="text-[var(--text-primary)] hover:underline font-semibold transition-colors">
               {isSignup ? 'Sign in' : 'Create one'}
             </button>
           </p>
