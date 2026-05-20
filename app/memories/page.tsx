@@ -57,22 +57,22 @@ export default function MemoriesPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-primary)]">
       {/* Header */}
-      <nav className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-[#222222] bg-[#0c0c0c]">
+      <nav className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-[var(--border)] bg-[var(--bg-secondary)]">
         <div className="flex items-center">
           <a href="/" className="btn-ghost text-xs px-2.5 py-1.5 sm:px-3 sm:py-2">
             ← Back<span className="hidden sm:inline"> to Chat</span>
           </a>
         </div>
-        <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight">Memory Vault</h1>
+        <h1 className="text-sm sm:text-base font-semibold text-[var(--text-primary)] tracking-tight">Memory Vault</h1>
         
         {/* View Toggle */}
-        <div className="flex items-center gap-0.5 bg-[#141414] rounded-lg p-0.5 border border-[#222222]">
+        <div className="flex items-center gap-0.5 bg-[var(--bg-card)] rounded-lg p-0.5 border border-[var(--border)]">
           <button
             onClick={() => setView('list')}
             className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs font-medium transition-all ${
-              view === 'list' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
+              view === 'list' ? 'bg-white text-black' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             List
@@ -80,7 +80,7 @@ export default function MemoriesPage() {
           <button
             onClick={() => setView('graph')}
             className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs font-medium transition-all ${
-              view === 'graph' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
+              view === 'graph' ? 'bg-white text-black' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             Graph
@@ -92,16 +92,16 @@ export default function MemoriesPage() {
       {view === 'list' ? (
         <div className="flex-1 max-w-3xl w-full mx-auto px-6 py-8">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Knowledge Graph</h2>
-            <p className="text-neutral-500 text-sm mt-1">Entities, facts, and relationships extracted from your conversations</p>
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Knowledge Graph</h2>
+            <p className="text-[var(--text-muted)] text-sm mt-1">Entities, facts, and relationships extracted from your conversations</p>
           </div>
           <MemoryPanel nodes={nodes} edges={edges} onDelete={handleDelete} loading={loading} />
         </div>
       ) : (
         <div className="flex-1 p-4">
           <div className="mb-4">
-            <h2 className="text-xl font-bold text-white tracking-tight">Neural Memory Map</h2>
-            <p className="text-neutral-500 text-xs mt-1">Click nodes to inspect • Drag to reposition • Connections show relationships</p>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Neural Memory Map</h2>
+            <p className="text-[var(--text-muted)] text-xs mt-1">Click nodes to inspect • Drag to reposition • Connections show relationships</p>
           </div>
           <div className="h-[calc(100vh-160px)]">
             <MemoryGraph nodes={nodes} edges={edges} onDeleteNode={handleDelete} />

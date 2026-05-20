@@ -36,6 +36,17 @@ Before running the schema migrations, you must enable the vector database extens
 5.  Click **Run** to execute the query.
     *   *This will automatically create the `messages`, `memory_nodes`, and `memory_edges` tables, set up their cascading foreign key relationships, configure Row Level Security (RLS) rules, and register the specialized database RPC functions (`match_nodes`, `get_node_neighbors`).*
 
+### 4. Storage buckets (avatars & exports)
+
+Profile photo uploads use the **`avatars`** bucket. Large GDPR exports use the **`exports`** bucket (private).
+
+1.  Open **SQL Editor** → **New query**.
+2.  Run **`db/storage_avatars_bucket.sql`** (creates `avatars`, public read, user-scoped write policies).
+3.  For exports: **Storage** → **New bucket** → id **`exports`**, leave **Public** off (signed URLs only).  
+    *Or* create it from the dashboard only; the app uploads under `exports/<userId>/...`.
+
+If you skip this step, avatar upload will fail with a message about the missing **`avatars`** bucket.
+
 ---
 
 ## 🔑 Step 2: Extracting API Keys

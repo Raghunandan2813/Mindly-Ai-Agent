@@ -69,7 +69,7 @@ export default function InsightBanner({ insight, onAction, onDismiss }: InsightB
             {/* Content Container */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[0.65rem] font-bold text-neutral-400 uppercase tracking-widest font-mono">
+                <span className="text-[0.65rem] font-bold text-[var(--text-secondary)] uppercase tracking-widest font-mono">
                   Mindly Active Reflection
                 </span>
                 <span className={`text-[0.55rem] px-2 py-0.5 rounded-full border font-mono uppercase font-bold select-none ${getBadgeStyle(insight.type)}`}>
@@ -78,14 +78,14 @@ export default function InsightBanner({ insight, onAction, onDismiss }: InsightB
               </div>
 
               {/* Alert Content */}
-              <p className="text-[0.82rem] font-medium text-neutral-200 leading-relaxed mb-1.5">
+              <p className="text-[0.82rem] font-medium text-[var(--text-primary)] leading-relaxed mb-1.5">
                 {insight.message}
               </p>
 
               {/* Suggestion & CTA Action Row */}
               {insight.suggestion && (
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-2.5 pt-2.5 border-t border-amber-500/10">
-                  <p className="text-[0.75rem] text-neutral-400 leading-normal italic flex-1">
+                  <p className="text-[0.75rem] text-[var(--text-secondary)] leading-normal italic flex-1">
                     "{insight.suggestion}"
                   </p>
                   <button
@@ -102,7 +102,7 @@ export default function InsightBanner({ insight, onAction, onDismiss }: InsightB
           {/* Dismiss (Close) button */}
           <button
             onClick={handleDismissClick}
-            className="flex-shrink-0 p-1.5 rounded-lg hover:bg-amber-500/10 text-neutral-500 hover:text-amber-400 transition-all duration-200 mt-0.5 cursor-pointer"
+            className="flex-shrink-0 p-1.5 rounded-lg hover:bg-amber-500/10 text-[var(--text-muted)] hover:text-amber-400 transition-all duration-200 mt-0.5 cursor-pointer"
             aria-label="Dismiss Reflection"
             title="Permanently Dismiss"
           >
