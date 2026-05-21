@@ -43,7 +43,8 @@ export async function GET() {
       totalMemories: (nodesCount || 0) + (summariesCount || 0)
     });
 
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Stats retrieval failed' }, { status: 500 });
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : 'Stats retrieval failed';
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }

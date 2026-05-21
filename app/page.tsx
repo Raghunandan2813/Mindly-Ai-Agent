@@ -144,7 +144,9 @@ export default function Home() {
   const handleNewChat = () => {
     changeSession(null);
     // Close sidebar on mobile when starting a new chat
-    setSidebarOpen(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
   };
 
   const handleSessionCreated = () => {

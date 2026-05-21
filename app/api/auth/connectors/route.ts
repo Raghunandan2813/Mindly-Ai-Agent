@@ -101,7 +101,13 @@ export async function POST(request: Request) {
           .eq('connector_name', connectorName)
           .single();
 
-        if (!row?.enabled) {
+        if (!row) {
+          return NextResponse.json({
+            error: 'Connector state not found',
+          }, { status: 404 });
+        }
+
+        if (!row.enabled) {
           await db
             .from('connector_states')
             .update({
@@ -114,6 +120,23 @@ export async function POST(request: Request) {
           return NextResponse.json({
             success: false,
             message: 'Connector is disabled',
+          }, { status: 400 });
+        }
+
+        if (!row.access_token && !row.refresh_token) {
+          const errMsg = 'Missing credentials to perform sync';
+          await db
+            .from('connector_states')
+            .update({
+              last_error: errMsg,
+              last_error_at: new Date().toISOString(),
+            })
+            .eq('user_id', user.id)
+            .eq('connector_name', connectorName);
+
+          return NextResponse.json({
+            success: false,
+            message: errMsg,
           }, { status: 400 });
         }
 
