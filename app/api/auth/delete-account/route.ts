@@ -36,11 +36,18 @@ export async function POST(request: Request) {
 
     // 2. Administrator Protection Shield
     // Block standard settings deletion flow for administrators
-    const { data: adminCheck } = await supabaseAdmin
+    const { data: adminCheck, error: adminCheckError } = await supabaseAdmin
       .from('app_admins')
       .select('user_id')
       .eq('user_id', userId)
       .maybeSingle();
+
+    if (adminCheckError) {
+      console.error('[Delete API] Admin check query error:', adminCheckError);
+      return NextResponse.json({
+        error: 'Security Warning: Failed to verify administrator status. Please try again later.'
+      }, { status: 500 });
+    }
 
     if (adminCheck || userEmail.toLowerCase() === 'admin@mindly.ai') {
       return NextResponse.json({

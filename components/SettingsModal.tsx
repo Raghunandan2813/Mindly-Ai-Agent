@@ -467,20 +467,42 @@ export default function SettingsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-4 bg-[var(--bg-primary)]/75 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
       {/* Modal Card container */}
-      <div className="w-full max-w-[660px] h-[80vh] md:h-[560px] rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] flex-col md:flex-row flex overflow-hidden shadow-2xl relative text-left">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-modal-title"
+        aria-describedby="settings-modal-description"
+        className="w-full max-w-[660px] h-[80vh] md:h-[560px] rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] flex-col md:flex-row flex overflow-hidden shadow-2xl relative text-left"
+      >
 
         {/* ── Mobile header (visible on small screens only) ── */}
-        <div className="flex md:hidden items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border)] flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            <span className="text-xs font-bold text-[var(--text-primary)]">Settings</span>
+        <div className="flex md:hidden flex-col px-4 pt-4 pb-2 border-b border-[var(--border)] flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span className="text-xs font-bold text-[var(--text-primary)]">Settings</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all text-xs font-semibold"
+            >
+              ✕ Close
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all text-xs font-semibold"
-          >
-            ✕ Close
-          </button>
+          {(saveSuccess || errorMessage) && (
+            <div className="mt-2 space-y-1.5">
+              {saveSuccess && (
+                <div className="text-[0.65rem] font-bold text-center text-emerald-400 py-1 bg-emerald-950/20 border border-emerald-900/40 rounded-lg animate-pulse">
+                  {saveSuccess}
+                </div>
+              )}
+              {errorMessage && (
+                <div className="text-[0.65rem] font-bold text-center text-red-400 py-1.5 px-2 bg-red-950/20 border border-red-900/40 rounded-lg max-h-16 overflow-y-auto leading-relaxed">
+                  {errorMessage}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Mobile horizontal tab strip ── */}
@@ -507,11 +529,11 @@ export default function SettingsModal({
         <div className="hidden md:flex w-52 bg-[var(--bg-card)] border-r border-[var(--border)] p-5 flex-col justify-between flex-shrink-0">
           <div className="space-y-6">
             <div>
-              <div className="text-xs font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-2">
+              <div id="settings-modal-title" className="text-xs font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 Workspace Settings
               </div>
-              <div className="text-[0.6rem] text-[var(--text-muted)] mt-1 font-mono uppercase tracking-widest">
+              <div id="settings-modal-description" className="text-[0.6rem] text-[var(--text-muted)] mt-1 font-mono uppercase tracking-widest">
                 Configure Mindly AI
               </div>
             </div>
