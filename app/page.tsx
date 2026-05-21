@@ -143,6 +143,8 @@ export default function Home() {
 
   const handleNewChat = () => {
     changeSession(null);
+    // Close sidebar on mobile when starting a new chat
+    setSidebarOpen(false);
   };
 
   const handleSessionCreated = () => {
@@ -167,15 +169,16 @@ export default function Home() {
   if (!userId) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans">
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans">
       {/* Sliding Sidebar - Sessions List */}
       <div
-        className={`${
-          sidebarOpen ? 'w-80 border-r border-[var(--border)]' : 'w-0 border-r-0'
-        } transition-all duration-300 ease-in-out bg-[var(--bg-secondary)] flex flex-col overflow-hidden relative z-20 flex-shrink-0`}
+        className={`fixed inset-y-0 left-0 z-30 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:relative md:translate-x-0 md:w-80 w-full transition-transform duration-300 ease-in-out bg-[var(--bg-secondary)] flex flex-col overflow-hidden`}
       >
         {/* Rigid inner container prevents wrapping/squishing during sliding animation */}
-        <div className="w-80 h-full flex flex-col flex-shrink-0">
+        {/* Rigid inner container prevents wrapping/squishing during sliding animation */}
+        <div className="w-80 h-full flex flex-col flex-shrink-0 md:w-80">
           
           {/* Sidebar Header */}
           <div className="p-4 border-b border-[var(--border)] flex flex-col gap-4 bg-[var(--bg-secondary)]">

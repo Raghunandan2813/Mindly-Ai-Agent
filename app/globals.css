@@ -211,3 +211,12 @@ html[data-theme='light'] {
   background: var(--bg-card);
   color: var(--text-secondary);
 }
+
+/* ========== Hide scrollbar (mobile tab strip) ========== */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

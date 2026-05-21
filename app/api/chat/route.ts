@@ -419,4 +419,15 @@ Rules & Instructions:
     console.error('Chat API Error:', errMsg);
     return NextResponse.json({ error: errMsg }, { status: 500 });
   }
+} reply,
+  sessionId: sid,
+    memoriesUsed: memoriesCount,
+      recalledMemories: memoryContext && memoryContext !== 'No memories stored yet.' ? memoryContext : null
+    });
+
+  } catch (err: unknown) {
+  const errMsg = err instanceof Error ? err.message : 'Unknown error';
+  console.error('Chat API Error:', errMsg);
+  return NextResponse.json({ error: errMsg }, { status: 500 });
+}
 }
