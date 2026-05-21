@@ -106,19 +106,20 @@ export async function DELETE(request: Request) {
     const db = supabaseAdmin || supabase;
 
     // Soft delete by setting is_revoked to true and strict user_id checking
-    const { data: revokedRows, error: updateErr } = await db
+    const { data: revokedToken, error: updateErr } = await db
       .from('api_tokens')
       .update({ is_revoked: true })
       .eq('id', tokenId)
       .eq('user_id', user.id)
-      .select('id');
+      .select('id')
+      .maybeSingle();
 
     if (updateErr) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
 
-    if (!revokedRows || revokedRows.length === 0) {
-      return NextResponse.json({ error: 'Token not found' }, { status: 404 });
+    if (!revokedToken) {
+      return NextResponse.json({ error: 'API token not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, message: 'API token successfully revoked' });
