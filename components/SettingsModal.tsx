@@ -62,7 +62,7 @@ export default function SettingsModal({
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // Stats state
   const [stats, setStats] = useState({
     nodesCount: 0,
@@ -465,12 +465,46 @@ export default function SettingsModal({
   const isGradient = profilePhoto && profilePhoto.startsWith('gradient-');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-primary)]/75 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-4 bg-[var(--bg-primary)]/75 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
       {/* Modal Card container */}
-      <div className="w-[660px] h-[560px] rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] flex overflow-hidden shadow-2xl relative text-left">
-        
-        {/* Left pane: Navigation Tabs */}
-        <div className="w-52 bg-[var(--bg-card)] border-r border-[var(--border)] p-5 flex flex-col justify-between">
+      <div className="w-full max-w-[660px] h-[80vh] md:h-[560px] rounded-3xl bg-[var(--bg-card)] border border-[var(--border)] flex-col md:flex-row flex overflow-hidden shadow-2xl relative text-left">
+
+        {/* ── Mobile header (visible on small screens only) ── */}
+        <div className="flex md:hidden items-center justify-between px-4 pt-4 pb-2 border-b border-[var(--border)] flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span className="text-xs font-bold text-[var(--text-primary)]">Settings</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all text-xs font-semibold"
+          >
+            ✕ Close
+          </button>
+        </div>
+
+        {/* ── Mobile horizontal tab strip ── */}
+        <div className="flex md:hidden overflow-x-auto gap-1 px-3 py-2 border-b border-[var(--border)] flex-shrink-0 scrollbar-none">
+          {(['profile', 'ai', 'memory', 'security', 'appearance'] as TabType[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-[0.65rem] font-semibold transition-all flex-shrink-0 ${activeTab === tab
+                  ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-card)] border border-transparent'
+                }`}
+            >
+              {tab === 'profile' && 'Profile'}
+              {tab === 'ai' && 'AI'}
+              {tab === 'memory' && 'Memory'}
+              {tab === 'security' && 'Security'}
+              {tab === 'appearance' && 'Appearance'}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Desktop left sidebar (hidden on mobile) ── */}
+        <div className="hidden md:flex w-52 bg-[var(--bg-card)] border-r border-[var(--border)] p-5 flex-col justify-between flex-shrink-0">
           <div className="space-y-6">
             <div>
               <div className="text-xs font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-2">
@@ -483,56 +517,22 @@ export default function SettingsModal({
             </div>
 
             <nav className="space-y-1.5">
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                  activeTab === 'profile'
-                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
-                }`}
-              >
-                Profile
-              </button>
-              <button
-                onClick={() => setActiveTab('ai')}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                  activeTab === 'ai'
-                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
-                }`}
-              >
-                AI Engines
-              </button>
-              <button
-                onClick={() => setActiveTab('memory')}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                  activeTab === 'memory'
-                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
-                }`}
-              >
-                Memory Settings
-              </button>
-              <button
-                onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                  activeTab === 'security'
-                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
-                }`}
-              >
-                Security Safeguards
-              </button>
-              <button
-                onClick={() => setActiveTab('appearance')}
-                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                  activeTab === 'appearance'
-                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
-                }`}
-              >
-                Appearance
-              </button>
+              {(['profile', 'ai', 'memory', 'security', 'appearance'] as TabType[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${activeTab === tab
+                      ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
+                    }`}
+                >
+                  {tab === 'profile' && 'Profile'}
+                  {tab === 'ai' && 'AI Engines'}
+                  {tab === 'memory' && 'Memory Settings'}
+                  {tab === 'security' && 'Security Safeguards'}
+                  {tab === 'appearance' && 'Appearance'}
+                </button>
+              ))}
             </nav>
           </div>
 
@@ -557,8 +557,8 @@ export default function SettingsModal({
         </div>
 
         {/* Right pane: Content Area */}
-        <div className="flex-1 p-6 overflow-y-auto bg-[var(--bg-card)]">
-          
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-[var(--bg-card)]">
+
           {/* TAB 0: PROFILE SETTINGS */}
           {activeTab === 'profile' && (
             <div className="space-y-5 animate-[fadeIn_0.15s_ease-out]">
@@ -576,10 +576,9 @@ export default function SettingsModal({
                 </label>
                 <div className="flex items-center gap-4">
                   {/* Active avatar preview */}
-                  <div 
-                    className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg border border-[var(--border)] overflow-hidden transition-all flex-shrink-0 ${
-                      isGradient ? `bg-gradient-to-br ${gradients[profilePhoto] || 'from-indigo-500 to-purple-600'}` : 'bg-[var(--bg-secondary)]'
-                    }`}
+                  <div
+                    className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg border border-[var(--border)] overflow-hidden transition-all flex-shrink-0 ${isGradient ? `bg-gradient-to-br ${gradients[profilePhoto] || 'from-indigo-500 to-purple-600'}` : 'bg-[var(--bg-secondary)]'
+                      }`}
                   >
                     {isGradient ? (
                       <span className="text-lg font-bold text-[var(--text-primary)] uppercase">
@@ -600,9 +599,8 @@ export default function SettingsModal({
                             setProfilePhoto(gKey);
                             handleSaveProfile({ profilePhoto: gKey });
                           }}
-                          className={`w-5.5 h-5.5 rounded-full bg-gradient-to-br ${gradients[gKey]} border transition-all ${
-                            profilePhoto === gKey ? 'border-white scale-110 shadow-md' : 'border-transparent hover:scale-105'
-                          }`}
+                          className={`w-5.5 h-5.5 rounded-full bg-gradient-to-br ${gradients[gKey]} border transition-all ${profilePhoto === gKey ? 'border-white scale-110 shadow-md' : 'border-transparent hover:scale-105'
+                            }`}
                           title={gKey.replace('gradient-', '')}
                         />
                       ))}
@@ -610,12 +608,12 @@ export default function SettingsModal({
 
                     {/* Image file uploader input */}
                     <div className="flex items-center gap-2">
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handlePhotoUpload} 
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handlePhotoUpload}
                         accept="image/jpeg,image/png,image/gif"
-                        className="hidden" 
+                        className="hidden"
                       />
                       <button
                         onClick={() => fileInputRef.current?.click()}
@@ -806,9 +804,8 @@ export default function SettingsModal({
                     setMemoryEnabled(nextVal);
                     handleSaveProfile({ memoryEnabled: nextVal });
                   }}
-                  className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${
-                    memoryEnabled ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
-                  }`}
+                  className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${memoryEnabled ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
+                    }`}
                 >
                   <div className="w-4 h-4 rounded-full bg-[var(--bg-primary)] shadow-sm" />
                 </button>
@@ -939,9 +936,8 @@ export default function SettingsModal({
                       setGraphEnabled(nextVal);
                       saveSetting('mindly_graph_enabled', nextVal ? 'true' : 'false');
                     }}
-                    className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${
-                      graphEnabled ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
-                    }`}
+                    className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${graphEnabled ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
+                      }`}
                   >
                     <div className="w-4 h-4 rounded-full bg-[var(--bg-primary)] shadow-sm" />
                   </button>
@@ -956,9 +952,8 @@ export default function SettingsModal({
                   </div>
                   <button
                     onClick={onToggleProactive}
-                    className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${
-                      proactiveEnabled ? 'bg-amber-500 justify-end' : 'bg-[var(--bg-input)] justify-start'
-                    }`}
+                    className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${proactiveEnabled ? 'bg-amber-500 justify-end' : 'bg-[var(--bg-input)] justify-start'
+                      }`}
                   >
                     <div className="w-4 h-4 rounded-full bg-[var(--bg-primary)] shadow-sm" />
                   </button>
@@ -981,7 +976,7 @@ export default function SettingsModal({
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                     Prompt Injection Blocker
+                    Prompt Injection Blocker
                     <span className="text-[0.55rem] font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-900/50 text-emerald-400">Layer 3</span>
                   </div>
                   <div className="text-[0.65rem] text-[var(--text-muted)] leading-relaxed">
@@ -994,9 +989,8 @@ export default function SettingsModal({
                     setInjectionShield(nextVal);
                     saveSetting('mindly_injection_shield', nextVal ? 'true' : 'false');
                   }}
-                  className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${
-                    injectionShield ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
-                  }`}
+                  className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${injectionShield ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
+                    }`}
                 >
                   <div className="w-4 h-4 rounded-full bg-[var(--bg-primary)] shadow-sm" />
                 </button>
@@ -1021,9 +1015,8 @@ export default function SettingsModal({
                     setRedactionEnabled(nextVal);
                     saveSetting('mindly_redaction_enabled', nextVal ? 'true' : 'false');
                   }}
-                  className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${
-                    redactionEnabled ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
-                  }`}
+                  className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center flex-shrink-0 ${redactionEnabled ? 'bg-[var(--text-primary)] justify-end' : 'bg-[var(--bg-input)] justify-start'
+                    }`}
                 >
                   <div className="w-4 h-4 rounded-full bg-[var(--bg-primary)] shadow-sm" />
                 </button>
