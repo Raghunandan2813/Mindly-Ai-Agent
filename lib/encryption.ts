@@ -4,18 +4,25 @@
 
 import crypto from 'crypto';
 
-const encryptionKeyHex = process.env.ENCRYPTION_KEY;
+let cachedKey: Buffer | null = null;
 
-if (!encryptionKeyHex) {
-  throw new Error('CRITICAL SHIELD FAILURE: ENCRYPTION_KEY environment variable is not defined.');
-}
+function getEncryptionKey(): Buffer {
+  if (cachedKey) return cachedKey;
 
-const ENCRYPTION_KEY = Buffer.from(encryptionKeyHex, 'hex');
+  const encryptionKeyHex = process.env.ENCRYPTION_KEY;
+  if (!encryptionKeyHex) {
+    throw new Error('CRITICAL SHIELD FAILURE: ENCRYPTION_KEY environment variable is not defined.');
+  }
 
-if (ENCRYPTION_KEY.length !== 32) {
-  throw new Error(
-    `CRITICAL SHIELD FAILURE: ENCRYPTION_KEY must be exactly 32 bytes as a hex string. Current parsed length: ${ENCRYPTION_KEY.length} bytes.`
-  );
+  const key = Buffer.from(encryptionKeyHex, 'hex');
+  if (key.length !== 32) {
+    throw new Error(
+      `CRITICAL SHIELD FAILURE: ENCRYPTION_KEY must be exactly 32 bytes as a hex string. Current parsed length: ${key.length} bytes.`
+    );
+  }
+
+  cachedKey = key;
+  return key;
 }
 
 /**
@@ -25,7 +32,8 @@ if (ENCRYPTION_KEY.length !== 32) {
  */
 export function encrypt(text: string): string {
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+  const key = getEncryptionKey();
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
 
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
@@ -49,7 +57,8 @@ export function decrypt(encryptedData: string): string {
   const authTag = Buffer.from(parts[1], 'hex');
   const encryptedText = Buffer.from(parts[2], 'hex');
 
-  const decipher = crypto.createDecipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+  const key = getEncryptionKey();
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(authTag);
 
   let decrypted = decipher.update(encryptedText, undefined, 'utf8');
