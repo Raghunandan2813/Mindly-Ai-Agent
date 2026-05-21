@@ -174,9 +174,11 @@ export default function Home() {
     <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans">
       {/* Sliding Sidebar - Sessions List */}
       <div
-        className={`fixed inset-y-0 left-0 z-30 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:relative md:translate-x-0 md:w-80 w-full transition-transform duration-300 ease-in-out bg-[var(--bg-secondary)] flex flex-col overflow-hidden`}
+        className={`fixed inset-y-0 left-0 z-30 w-full md:relative bg-[var(--bg-secondary)] flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
+          sidebarOpen
+            ? 'translate-x-0 md:translate-x-0 md:w-80'
+            : '-translate-x-full md:-translate-x-full md:w-0'
+        }`}
       >
         {/* Rigid inner container prevents wrapping/squishing during sliding animation */}
         {/* Rigid inner container prevents wrapping/squishing during sliding animation */}
