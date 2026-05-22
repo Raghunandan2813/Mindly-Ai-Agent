@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'A password reset link has been sent. The link is valid for 1 hour. Please check your inbox!',
+      message: 'A password reset link has been sent. The link is valid for 5 minutes. Please check your inbox!',
     });
   } catch (err: any) {
     console.error('Unexpected Forgot Password exception:', err);
