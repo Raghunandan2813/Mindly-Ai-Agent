@@ -21,6 +21,8 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [proactiveEnabled, setProactiveEnabled] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
 
   const router = useRouter();
 
@@ -88,6 +90,12 @@ export default function Home() {
           
           fetchSessions(data.userId, true);
 
+          // Trigger onboarding if not completed yet according to global DB flag
+          if (data.onboardingCompleted === false) {
+            setShowOnboarding(true);
+            setOnboardingStep(1);
+          }
+
           // Register device session for limit enforcement + revocation blocklist
           fetch('/api/auth/sessions', {
             method: 'POST',
@@ -139,6 +147,19 @@ export default function Home() {
     }
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
+  };
+
+  const handleCompleteOnboarding = async () => {
+    setShowOnboarding(false);
+    try {
+      await fetch('/api/auth/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ onboardingCompleted: true })
+      });
+    } catch (err) {
+      console.error('Failed to sync completed onboarding state:', err);
+    }
   };
 
   const handleNewChat = () => {
@@ -360,6 +381,117 @@ export default function Home() {
         proactiveEnabled={proactiveEnabled}
         onToggleProactive={toggleProactive}
       />
+
+      {/* Onboarding Tour Modal Overlay */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-[var(--bg-secondary)] border border-[var(--border)] rounded-3xl p-6 shadow-2xl relative overflow-hidden backdrop-blur-md bg-opacity-80">
+            {/* Visual Header Decoration */}
+            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-neutral-800 via-neutral-400 to-neutral-800" />
+            
+            {/* Step Counter */}
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] font-mono">
+                System Onboarding · Step {onboardingStep} of 4
+              </span>
+              <button 
+                onClick={handleCompleteOnboarding}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              >
+                Skip
+              </button>
+            </div>
+
+            {/* Slide Contents */}
+            <div className="min-h-[220px] flex flex-col justify-center">
+              {onboardingStep === 1 && (
+                <div className="animate-fade-in-up">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center mb-4 shadow-md font-bold text-xl">
+                    🧠
+                  </div>
+                  <h3 className="text-xl font-bold tracking-tight mb-2">Welcome to Mindly AI</h3>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    This is your personal digital memory assistant. Unlike regular chat agents, Mindly AI listens, learns, and builds a permanent visual knowledge graph of your thoughts, facts, and relationships.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 2 && (
+                <div className="animate-fade-in-up">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center mb-4 shadow-md font-bold text-xl">
+                    🕸️
+                  </div>
+                  <h3 className="text-xl font-bold tracking-tight mb-2">Visual Knowledge Graph</h3>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    Every message you send is dynamically processed. Entities and facts are distilled into memory nodes and linked together. You can inspect, query, and traverse your semantic neural graph in real-time in the Vault.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 3 && (
+                <div className="animate-fade-in-up">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center mb-4 shadow-md font-bold text-xl">
+                    ⚡
+                  </div>
+                  <h3 className="text-xl font-bold tracking-tight mb-2">Proactive Reflections</h3>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    With "Proactive reflections" enabled, Mindly AI autonomously reflects on your recent sessions to extract deep connections and insights while you are offline, offering you valuable advice on your next visit.
+                  </p>
+                </div>
+              )}
+
+              {onboardingStep === 4 && (
+                <div className="animate-fade-in-up">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center mb-4 shadow-md font-bold text-xl">
+                    🔒
+                  </div>
+                  <h3 className="text-xl font-bold tracking-tight mb-2">Private & Secure at Rest</h3>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    Your privacy is our core foundation. Your digital footprint is encrypted at rest using industry-standard AES-256-GCM. We never log or sell your personal details, and GDPR delete-cascades guarantee complete control.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination & Navigation */}
+            <div className="mt-8 flex justify-between items-center border-t border-[var(--border)] pt-4">
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4].map((s) => (
+                  <span 
+                    key={s} 
+                    className={`h-1.5 rounded-full transition-all duration-300 ${onboardingStep === s ? 'w-5 bg-white' : 'w-1.5 bg-neutral-800'}`} 
+                  />
+                ))}
+              </div>
+              <div className="flex gap-2">
+                {onboardingStep > 1 && (
+                  <button
+                    onClick={() => setOnboardingStep((s) => s - 1)}
+                    className="px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border)] rounded-xl hover:text-[var(--text-primary)] hover:border-neutral-700 transition-all cursor-pointer"
+                  >
+                    Back
+                  </button>
+                )}
+                {onboardingStep < 4 ? (
+                  <button
+                    onClick={() => setOnboardingStep((s) => s + 1)}
+                    className="px-4 py-2 text-xs font-semibold text-black bg-white rounded-xl hover:bg-neutral-200 transition-all cursor-pointer"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleCompleteOnboarding}
+                    className="px-4 py-2 text-xs font-semibold text-black bg-white rounded-xl hover:bg-neutral-200 transition-all shadow-md cursor-pointer"
+                  >
+                    Get Started →
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

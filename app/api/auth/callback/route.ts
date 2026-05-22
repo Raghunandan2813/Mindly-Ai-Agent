@@ -18,8 +18,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent(errorMsg)}`);
   }
 
+  // 1.5. Special recovery redirect for implicit grant hash flows
+  if (type === 'recovery' && !code && !token_hash) {
+    console.log('🔄 Recovery flow detected with hash fragment. Redirecting directly to /reset-password');
+    return NextResponse.redirect(`${requestUrl.origin}/reset-password`);
+  }
+
   // 2. Branch A: Email confirmation link clicked (Token Hash verification)
   if (token_hash && type) {
+    if (type === 'invite') {
+      // Direct invite flow immediately to unified client confirm page to prevent consuming token or incorrect type failures
+      return NextResponse.redirect(`${requestUrl.origin}/auth/confirm?token_hash=${token_hash}`);
+    }
     try {
       const supabase = await createSupabaseServer();
       const { error } = await supabase.auth.verifyOtp({
@@ -28,7 +38,10 @@ export async function GET(request: NextRequest) {
       });
 
       if (!error) {
-        // Successfully verified and logged in! Redirect home
+        // Successfully verified and logged in! Redirect to password reset/onboarding based on type
+        if (type === 'recovery') {
+          return NextResponse.redirect(`${requestUrl.origin}/reset-password`);
+        }
         return NextResponse.redirect(`${requestUrl.origin}/`);
       }
 
@@ -47,7 +60,13 @@ export async function GET(request: NextRequest) {
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       
       if (!error) {
-        // Successfully authenticated! Redirect home
+        // Successfully authenticated! Redirect to appropriate page
+        if (type === 'recovery') {
+          return NextResponse.redirect(`${requestUrl.origin}/reset-password`);
+        }
+        if (type === 'invite') {
+          return NextResponse.redirect(`${requestUrl.origin}/auth/confirm`);
+        }
         return NextResponse.redirect(`${requestUrl.origin}/`);
       }
       

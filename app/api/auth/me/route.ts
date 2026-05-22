@@ -22,6 +22,9 @@ export async function GET() {
     proactiveEnabled: user.user_metadata?.proactive_enabled === true,
     memoryEnabled: user.user_metadata?.memory_enabled !== false,
     memoryRetentionPeriod: user.user_metadata?.memory_retention_period || 'forever',
+    country: user.user_metadata?.country || '',
+    fullName: user.user_metadata?.full_name || '',
+    onboardingCompleted: user.user_metadata?.onboarding_completed === true,
     subscriptionTier: getTierFromMetadata(user.user_metadata),
   });
 }

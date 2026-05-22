@@ -8,6 +8,13 @@ import { createSupabaseServer, supabaseAdmin } from '@/lib/supabase';
 // Regular expression ensuring strictly alphanumeric, spaces, dots, dashes, underscores, and apostrophes.
 const NAME_REGEX = /^[a-zA-Z0-9\s.\-_']{1,50}$/;
 
+const VALID_COUNTRIES = [
+  'India', 'United States', 'United Kingdom', 'Canada', 'Australia',
+  'Singapore', 'Germany', 'United Arab Emirates', 'France', 'Japan',
+  'Netherlands', 'Switzerland', 'Sweden', 'Brazil', 'South Africa',
+  'New Zealand', 'Italy', 'Spain', 'Mexico', 'Saudi Arabia'
+];
+
 export async function POST(request: Request) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,7 +25,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { displayName, profilePhoto, proactiveEnabled, memoryEnabled, memoryRetentionPeriod, email } = body;
+    const { displayName, fullName, profilePhoto, proactiveEnabled, memoryEnabled, memoryRetentionPeriod, email, country, onboardingCompleted } = body;
 
     // 1. Strict Email Protection
     if (email !== undefined && email !== user.email) {
@@ -53,6 +60,28 @@ export async function POST(request: Request) {
       updateData.display_name = sanitizedName;
     }
 
+    let sanitizedFullName = '';
+    if (fullName !== undefined) {
+      const stripped = fullName.replace(/<\/?[^>]+(>|$)/g, "").trim();
+
+      if (!stripped) {
+        return NextResponse.json({ error: 'Full name cannot be empty.' }, { status: 400 });
+      }
+
+      if (stripped.length > 50) {
+        return NextResponse.json({ error: 'Full name cannot exceed 50 characters.' }, { status: 400 });
+      }
+
+      if (!NAME_REGEX.test(stripped)) {
+        return NextResponse.json({
+          error: 'Full name can only contain letters, numbers, spaces, dots, dashes, underscores, and apostrophes.'
+        }, { status: 400 });
+      }
+
+      sanitizedFullName = stripped;
+      updateData.full_name = sanitizedFullName;
+    }
+
     if (profilePhoto !== undefined) {
       updateData.profile_photo = profilePhoto;
     }
@@ -64,6 +93,15 @@ export async function POST(request: Request) {
     }
     if (memoryRetentionPeriod !== undefined) {
       updateData.memory_retention_period = memoryRetentionPeriod;
+    }
+    if (country !== undefined) {
+      if (typeof country !== 'string' || !VALID_COUNTRIES.includes(country.trim())) {
+        return NextResponse.json({ error: 'Invalid country selection.' }, { status: 400 });
+      }
+      updateData.country = country.trim();
+    }
+    if (onboardingCompleted !== undefined) {
+      updateData.onboarding_completed = onboardingCompleted === true;
     }
 
     const db = supabaseAdmin || supabase;
@@ -85,16 +123,40 @@ export async function POST(request: Request) {
           error: 'This display name is already taken by another user. Please choose a unique name.'
         }, { status: 400 });
       }
+    }
 
+    const profileFieldsUpdated = displayName !== undefined || fullName !== undefined || profilePhoto !== undefined || country !== undefined || onboardingCompleted !== undefined;
+
+    if (profileFieldsUpdated) {
       // Upsert into profiles table
       try {
+        const upsertPayload: Record<string, any> = {
+          id: user.id,
+          display_name: displayName !== undefined ? sanitizedName : (user.user_metadata?.display_name || ''),
+          profile_photo: profilePhoto || user.user_metadata?.profile_photo || 'gradient-indigo'
+        };
+
+        if (fullName !== undefined) {
+          upsertPayload.full_name = sanitizedFullName;
+        } else if (user.user_metadata?.full_name) {
+          upsertPayload.full_name = user.user_metadata.full_name;
+        }
+
+        if (country !== undefined) {
+          upsertPayload.country = country.trim();
+        } else if (user.user_metadata?.country) {
+          upsertPayload.country = user.user_metadata.country;
+        }
+
+        if (onboardingCompleted !== undefined) {
+          upsertPayload.onboarding_completed = onboardingCompleted === true;
+        } else if (user.user_metadata?.onboarding_completed !== undefined) {
+          upsertPayload.onboarding_completed = user.user_metadata.onboarding_completed === true;
+        }
+
         const { error: upsertErr } = await db
           .from('profiles')
-          .upsert({
-            id: user.id,
-            display_name: sanitizedName,
-            profile_photo: profilePhoto || user.user_metadata?.profile_photo || 'gradient-indigo'
-          });
+          .upsert(upsertPayload);
 
         if (upsertErr) {
           if (upsertErr.code === '23505') {
@@ -122,10 +184,13 @@ export async function POST(request: Request) {
       success: true,
       user: {
         displayName: authData.user.user_metadata?.display_name || '',
+        fullName: authData.user.user_metadata?.full_name || '',
         profilePhoto: authData.user.user_metadata?.profile_photo || '',
         proactiveEnabled: authData.user.user_metadata?.proactive_enabled === true,
         memoryEnabled: authData.user.user_metadata?.memory_enabled !== false,
-        memoryRetentionPeriod: authData.user.user_metadata?.memory_retention_period || 'forever'
+        memoryRetentionPeriod: authData.user.user_metadata?.memory_retention_period || 'forever',
+        country: authData.user.user_metadata?.country || '',
+        onboardingCompleted: authData.user.user_metadata?.onboarding_completed === true,
       }
     });
 

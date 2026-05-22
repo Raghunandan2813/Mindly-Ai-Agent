@@ -7,13 +7,26 @@ import { isValidEmail, isStrongPassword } from '@/lib/auth';
 interface SignupBody {
   email: string;
   password: string;
+  displayName: string;
+  country: string;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password }: SignupBody = await req.json();
+    const { email, password, displayName, country }: SignupBody = await req.json();
 
-    // 1. Validate email format & trusted providers
+    // 1. Validate metadata fields
+    if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
+      return NextResponse.json({ error: 'Please enter your name.' }, { status: 400 });
+    }
+    if (displayName.trim().length > 50) {
+      return NextResponse.json({ error: 'Name cannot exceed 50 characters.' }, { status: 400 });
+    }
+    if (!country || typeof country !== 'string' || !country.trim()) {
+      return NextResponse.json({ error: 'Please enter your country.' }, { status: 400 });
+    }
+
+    // 2. Validate email format & trusted providers
     if (!email || !isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Please enter a valid email address (e.g., user@example.com)' },
@@ -31,7 +44,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Validate password strength
+    // 3. Validate password strength
     const passwordCheck = isStrongPassword(password);
     if (!passwordCheck.valid) {
       return NextResponse.json(
@@ -48,6 +61,13 @@ export async function POST(req: NextRequest) {
       const { data, error } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password,
+        options: {
+          data: {
+            display_name: displayName.trim(),
+            country: country.trim(),
+            profile_photo: 'gradient-indigo',
+          }
+        }
       });
 
       if (error) {
@@ -61,10 +81,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
 
+      // Synchronize with profiles table immediately to reserve the display name
+      if (data.user && supabaseAdmin) {
+        await supabaseAdmin.from('profiles').upsert({
+          id: data.user.id,
+          display_name: displayName.trim(),
+          country: country.trim(),
+          profile_photo: 'gradient-indigo'
+        });
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'A verification link has been sent to your email. Please check your inbox!',
+        message: 'A verification code has been sent to your email. Please check your inbox!',
         userId: data.user?.id,
+        requiresOtp: true,
       });
 
     } else {
@@ -80,6 +111,11 @@ export async function POST(req: NextRequest) {
         email: email.toLowerCase().trim(),
         password: password,
         email_confirm: true, // Auto-confirms instantly
+        user_metadata: {
+          display_name: displayName.trim(),
+          country: country.trim(),
+          profile_photo: 'gradient-indigo',
+        }
       });
 
       if (error) {
@@ -92,10 +128,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
 
+      // Synchronize with profiles table immediately
+      await supabaseAdmin.from('profiles').upsert({
+        id: data.user.id,
+        display_name: displayName.trim(),
+        country: country.trim(),
+        profile_photo: 'gradient-indigo'
+      });
+
       return NextResponse.json({
         success: true,
         message: 'Account created and verified successfully!',
         userId: data.user?.id,
+        requiresOtp: false,
       });
     }
 
