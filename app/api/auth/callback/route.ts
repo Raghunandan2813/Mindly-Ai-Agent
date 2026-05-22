@@ -1,7 +1,33 @@
 // app/api/auth/callback/route.ts
 // Secure GET route: Handles both OAuth code exchanges (Google) and Email OTP verification (token_hash) for Server-Side Cookies.
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServer } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+// Helper to create a Supabase client that writes session cookies to BOTH the Next.js cookie store and the redirected response headers.
+async function createSupabaseCallbackClient(response: NextResponse) {
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+            response.cookies.set(name, value, options);
+          });
+        } catch {
+          // Ignore if called in read-only environment
+        }
+      },
+    },
+  });
+}
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -30,19 +56,23 @@ export async function GET(request: NextRequest) {
       // Direct invite flow immediately to unified client confirm page to prevent consuming token or incorrect type failures
       return NextResponse.redirect(`${requestUrl.origin}/auth/confirm?token_hash=${token_hash}`);
     }
+
+    const targetRedirectUrl = type === 'recovery' 
+      ? `${requestUrl.origin}/reset-password` 
+      : `${requestUrl.origin}/`;
+    
+    const response = NextResponse.redirect(targetRedirectUrl);
+
     try {
-      const supabase = await createSupabaseServer();
+      const supabase = await createSupabaseCallbackClient(response);
       const { error } = await supabase.auth.verifyOtp({
         token_hash,
         type,
       });
 
       if (!error) {
-        // Successfully verified and logged in! Redirect to password reset/onboarding based on type
-        if (type === 'recovery') {
-          return NextResponse.redirect(`${requestUrl.origin}/reset-password`);
-        }
-        return NextResponse.redirect(`${requestUrl.origin}/`);
+        console.log(`✅ Token hash verified successfully for type: ${type}. Redirecting.`);
+        return response;
       }
 
       console.error('Email Verification OTP Error:', error.message);
@@ -55,19 +85,21 @@ export async function GET(request: NextRequest) {
 
   // 3. Branch B: Google/Third-party OAuth login (Authorization Code Exchange)
   if (code) {
+    const targetRedirectUrl = type === 'recovery' 
+      ? `${requestUrl.origin}/reset-password` 
+      : type === 'invite' 
+      ? `${requestUrl.origin}/auth/confirm` 
+      : `${requestUrl.origin}/`;
+      
+    const response = NextResponse.redirect(targetRedirectUrl);
+
     try {
-      const supabase = await createSupabaseServer();
+      const supabase = await createSupabaseCallbackClient(response);
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       
       if (!error) {
-        // Successfully authenticated! Redirect to appropriate page
-        if (type === 'recovery') {
-          return NextResponse.redirect(`${requestUrl.origin}/reset-password`);
-        }
-        if (type === 'invite') {
-          return NextResponse.redirect(`${requestUrl.origin}/auth/confirm`);
-        }
-        return NextResponse.redirect(`${requestUrl.origin}/`);
+        console.log(`✅ Auth code exchanged successfully. Redirecting.`);
+        return response;
       }
       
       console.error('OAuth Code Exchange Error:', error.message);
