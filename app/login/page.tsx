@@ -152,8 +152,19 @@ export default function LoginPage() {
 
   const router = useRouter();
 
-  // Read URL query errors & success messages safely
+  // Check session on mount and redirect if already logged in; read URL query errors/successes safely
   useEffect(() => {
+    // 1. Session check to prevent logged-in users from seeing login/signup screens
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.userId) {
+          router.push('/');
+        }
+      })
+      .catch(() => {});
+
+    // 2. Read URL params
     const params = new URLSearchParams(window.location.search);
     const err = params.get('error');
     if (err) {
@@ -163,7 +174,7 @@ export default function LoginPage() {
     if (successKey && VALID_SUCCESS_MESSAGES[successKey]) {
       setSuccess(VALID_SUCCESS_MESSAGES[successKey]);
     }
-  }, []);
+  }, [router]);
 
   // Cleanup resend timer on unmount
   useEffect(() => {
@@ -232,8 +243,20 @@ export default function LoginPage() {
           setTimeout(() => router.push('/'), 1000);
         }
       } else if (mode === 'forgot-password') {
-        // Password reset always sends a link, not an OTP code.
-        // Don't transition to OTP screen — just show the success message.
+        // Transition to OTP verification panel for secure mobile code entry
+        setOtpType('recovery');
+        setOtpAttempts(0);
+        setOtpLocked(false);
+        setOtpShake(false);
+        setOtpSuccess(false);
+        startResendCooldown();
+        setTimeout(() => {
+          setMode('otp-verify');
+          setError('');
+          setSuccess(data.message || 'Check your email for the 6-digit recovery code!');
+          setOtpValues(Array(6).fill(''));
+          setTimeout(() => otpRefs.current[0]?.focus(), 100);
+        }, 1500);
       }
     } catch { setError('Network error'); } finally { setLoading(false); }
   };

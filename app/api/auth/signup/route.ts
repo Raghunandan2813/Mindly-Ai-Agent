@@ -53,6 +53,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 4. Secure Pre-Signup Check: Check if email already exists in Auth database
+    if (supabaseAdmin) {
+      try {
+        const { data, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          perPage: 1000,
+        });
+
+        if (listError) {
+          console.error('Pre-signup email check API error:', listError.message);
+        } else if (data && data.users) {
+          const userExists = data.users.some(
+            (u) => u.email?.toLowerCase().trim() === email.toLowerCase().trim()
+          );
+          if (userExists) {
+            return NextResponse.json(
+              { error: 'An account with this email already exists. Please sign in instead!' },
+              { status: 409 }
+            );
+          }
+        }
+      } catch (err) {
+        console.error('Pre-signup email check unexpected exception:', err);
+      }
+    } else {
+      console.warn(
+        'CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing! Pre-signup duplicate checks are disabled. Already-registered users will proceed to the OTP screen.'
+      );
+    }
+
     const enforceVerification = process.env.ENABLE_REAL_EMAIL_VERIFICATION === 'true';
 
     if (enforceVerification) {
