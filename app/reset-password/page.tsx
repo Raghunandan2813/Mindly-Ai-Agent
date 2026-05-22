@@ -98,21 +98,47 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(true);
   const router = useRouter();
 
-  // Handle client-side hash processing and token expiration
+  // Handle client-side code exchange and active recovery session verification
   useEffect(() => {
-    // 1. Initial active recovery session verification
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error || !session) {
-        console.error('No active recovery session found on mount:', error?.message);
-        router.push('/login?error=The%20password%20reset%20link%20has%20expired%20or%20is%20invalid.%20Please%20request%20a%20new%20one.');
-      } else {
-        console.log('Successfully established recovery session for user:', session.user.email);
-      }
-    });
+    const checkSession = async () => {
+      try {
+        // Parse search query safely on client-side mount
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
 
-    // 2. Listen to PASSWORD_RECOVERY / expiration state changes
+        if (code) {
+          console.log('🔑 Found PKCE recovery code in URL. Exchanging for active session client-side...');
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            console.error('Code exchange failed client-side:', exchangeError.message);
+            router.push('/login?error=The%20password%20reset%20link%20has%20expired%20or%20is%20invalid.%20Please%20request%20a%20new%20one.');
+            return;
+          }
+          // Clean the query parameter from browser address bar to keep it beautiful
+          router.replace('/reset-password');
+        }
+
+        // Verify active recovery session exists now
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session) {
+          console.error('No active recovery session found on mount:', sessionError?.message);
+          router.push('/login?error=The%20password%20reset%20link%20has%20expired%20or%20is%20invalid.%20Please%20request%20a%20new%20one.');
+        } else {
+          console.log('Successfully established recovery session for user:', session.user.email);
+          setVerifying(false);
+        }
+      } catch (err) {
+        console.error('Exception during recovery session verification:', err);
+        router.push('/login?error=An%20unexpected%20error%20occurred%20verifying%20your%20recovery%20session.');
+      }
+    };
+
+    checkSession();
+
+    // Listen to PASSWORD_RECOVERY / expiration state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // If signed out or session becomes null, redirect with error
       if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
@@ -224,25 +250,34 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="new-password" className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">New Password</label>
-              <input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required disabled={loading} className="input-dark" />
-              <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Min 8 characters · uppercase · lowercase · number</p>
+          {verifying ? (
+            <div className="flex flex-col items-center justify-center space-y-4 py-12 text-center bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-8">
+              <div className="w-10 h-10 border-2 border-white/10 border-t-white rounded-full animate-spin"></div>
+              <p className="text-sm text-[var(--text-muted)] animate-pulse">
+                Establishing secure recovery session...
+              </p>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label htmlFor="new-password" className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">New Password</label>
+                <input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required disabled={loading} className="input-dark" />
+                <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Min 8 characters · uppercase · lowercase · number</p>
+              </div>
 
-            <div>
-              <label htmlFor="confirm-password" className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Confirm New Password</label>
-              <input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required disabled={loading} className="input-dark" />
-            </div>
+              <div>
+                <label htmlFor="confirm-password" className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Confirm New Password</label>
+                <input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required disabled={loading} className="input-dark" />
+              </div>
 
-            {error && <div className="px-4 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)] text-xs">{error}</div>}
-            {success && <div className="px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-[var(--text-primary)] text-xs">{success}</div>}
+              {error && <div className="px-4 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)] text-xs">{error}</div>}
+              {success && <div className="px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-[var(--text-primary)] text-xs">{success}</div>}
 
-            <button type="submit" disabled={loading} className="btn-primary w-full text-sm h-12">
-              {loading ? 'Updating Password...' : 'Reset Password →'}
-            </button>
-          </form>
+              <button type="submit" disabled={loading} className="btn-primary w-full text-sm h-12">
+                {loading ? 'Updating Password...' : 'Reset Password →'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
