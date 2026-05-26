@@ -512,8 +512,8 @@ export default function SettingsModal({
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`whitespace-nowrap px-3 py-1.5 rounded-full text-[0.65rem] font-semibold transition-all flex-shrink-0 ${activeTab === tab
-                  ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-card)] border border-transparent'
+                ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-card)] border border-transparent'
                 }`}
             >
               {tab === 'profile' && 'Profile'}
@@ -544,8 +544,8 @@ export default function SettingsModal({
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all ${activeTab === tab
-                      ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
+                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
                     }`}
                 >
                   {tab === 'profile' && 'Profile'}

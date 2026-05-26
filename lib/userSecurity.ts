@@ -56,34 +56,41 @@ export function resolveServerModel(
 ): string {
   const p = provider.toLowerCase();
 
+  let activeModel = requestedModel?.trim();
+  if (activeModel && activeModel.includes('claude-3-5-sonnet-20240620')) {
+    activeModel = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
+  }
+
+  console.log(`[resolveServerModel] requested: "${requestedModel}" -> resolved: "${activeModel}"`);
+
   if (tier === 'pro') {
-    if (requestedModel) return requestedModel;
+    if (activeModel) return activeModel;
     if (p === 'groq') {
       return process.env.GROQ_MODEL && process.env.GROQ_MODEL !== FREE_TIER_GROQ_MODEL
         ? process.env.GROQ_MODEL
         : selectGroqModelForMessage(message);
     }
-    if (p === 'gemini') return requestedModel || 'gemini-2.0-flash';
+    if (p === 'gemini') return activeModel || 'gemini-2.0-flash';
     if (p === 'openrouter') {
-      return requestedModel || process.env.OPENROUTER_MODEL || FREE_TIER_OPENROUTER_MODEL;
+      return activeModel || process.env.OPENROUTER_MODEL || FREE_TIER_OPENROUTER_MODEL;
     }
-    if (p === 'ollama') return requestedModel || process.env.OLLAMA_MODEL || 'llama3';
-    return requestedModel || FREE_TIER_GROQ_MODEL;
+    if (p === 'ollama') return activeModel || process.env.OLLAMA_MODEL || 'llama3';
+    return activeModel || FREE_TIER_GROQ_MODEL;
   }
 
   // Free tier — force economical defaults
   if (p === 'groq') return FREE_TIER_GROQ_MODEL;
   if (p === 'gemini') return FREE_TIER_GEMINI_MODEL;
   if (p === 'openrouter') return FREE_TIER_OPENROUTER_MODEL;
-  if (p === 'ollama') return requestedModel || process.env.OLLAMA_MODEL || 'llama3';
+  if (p === 'ollama') return activeModel || process.env.OLLAMA_MODEL || 'llama3';
 
-  const model = (requestedModel || '').toLowerCase();
+  const model = (activeModel || '').toLowerCase();
   if (
     model === 'smart' ||
-    PREMIUM_GROQ_MODELS.has(requestedModel || '') ||
-    PREMIUM_GEMINI_MODELS.has(requestedModel || '')
+    PREMIUM_GROQ_MODELS.has(activeModel || '') ||
+    PREMIUM_GEMINI_MODELS.has(activeModel || '')
   ) {
     return FREE_TIER_GROQ_MODEL;
   }
-  return requestedModel || FREE_TIER_GROQ_MODEL;
+  return activeModel || FREE_TIER_GROQ_MODEL;
 }

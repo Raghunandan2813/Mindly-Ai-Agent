@@ -10,7 +10,7 @@ const INJECTION_PATTERNS = [
   /forget (everything|all|previous|past)/i,
   /system prompt/i,
   /reveal (all|other|user|memories)/i,
-  /act as/i,
+  /act as (dan|jailbreak|developer mode)/i,
   /jailbreak/i,
   /DAN/i,
 ];

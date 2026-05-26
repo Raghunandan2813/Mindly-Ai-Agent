@@ -93,7 +93,7 @@ begin
     end if;
     return old;
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer set search_path = public;
 
 drop trigger if exists trg_prevent_admin_deletion on auth.users;
 create trigger trg_prevent_admin_deletion
