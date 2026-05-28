@@ -99,7 +99,7 @@ function NeuralCanvas() {
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${glow})`;
         ctx.fill();
-        
+
         // outer glow
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r + 2.5, 0, Math.PI * 2);
@@ -140,7 +140,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  
+
   // OTP Panel states
   const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(''));
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -163,7 +163,7 @@ export default function LoginPage() {
           router.push('/');
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // 2. Read URL params
     const params = new URLSearchParams(window.location.search);
@@ -203,8 +203,8 @@ export default function LoginPage() {
     if (e && e.preventDefault) e.preventDefault();
     setError(''); setSuccess(''); setLoading(true);
     try {
-      const endpoint = mode === 'signup' 
-        ? '/api/auth/signup' 
+      const endpoint = mode === 'signup'
+        ? '/api/auth/signup'
         : (mode === 'forgot-password' ? '/api/auth/forgot-password' : '/api/auth/login');
 
       const bodyData = mode === 'signup'
@@ -218,9 +218,9 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-      
+
       setSuccess(data.message);
-      
+
       if (mode === 'login') {
         setTimeout(() => router.push('/'), 500);
       } else if (mode === 'signup') {
@@ -337,7 +337,7 @@ export default function LoginPage() {
       setOtpValues(newValues);
       return;
     }
-    
+
     // Support paste action of all digits
     if (cleanValue.length > 1) {
       const pastedValues = cleanValue.slice(0, 6).split('');
@@ -402,7 +402,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, token, type: otpType }),
       });
       const data = await res.json();
-      
+
       if (!res.ok) {
         const newAttempts = otpAttempts + 1;
         setOtpAttempts(newAttempts);
@@ -425,15 +425,15 @@ export default function LoginPage() {
         } else {
           setError(`Incorrect code. ${3 - newAttempts} attempt${3 - newAttempts === 1 ? '' : 's'} remaining.`);
         }
-        
+
         setLoading(false);
         return;
       }
-      
+
       // Success!
       setOtpSuccess(true);
       setSuccess('Verified successfully!');
-      
+
       if (otpType === 'recovery') {
         setTimeout(() => router.push('/reset-password'), 1200);
       } else {
@@ -452,7 +452,6 @@ export default function LoginPage() {
     const token = otpValues.join('');
     await triggerOtpVerify(token);
   };
-
   return (
     <div className="min-h-screen flex text-[var(--text-primary)] bg-[var(--bg-primary)]">
       {/* Left — Animated neural network (Monochrome) */}
@@ -480,7 +479,7 @@ export default function LoginPage() {
           <p className="text-[#a3a3a3] text-center text-sm max-w-xs leading-relaxed">
             An AI that builds a living memory of every conversation — learning, remembering, and evolving with you.
           </p>
-          
+
           {/* Feature pills */}
           <div className="flex flex-wrap justify-center gap-2 mt-8">
             {['Semantic Recall', 'Multi-Session', 'Private & Encrypted', 'Zero Data Leaks'].map(f => (
@@ -493,73 +492,62 @@ export default function LoginPage() {
       </div>
 
       {/* Right — Forms */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 bg-[var(--bg-primary)] relative py-12">
-        <div className="w-full max-w-sm relative z-10 animate-fade-in-up">
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 bg-[var(--bg-primary)] relative py-16 overflow-hidden">
+        
+        {/* Cybernetic ambient glow spheres in background */}
+        <div className="absolute top-1/4 right-1/4 w-80 h-80 rounded-full bg-white/[0.02] blur-[120px] pointer-events-none animate-pulse-glow" />
+        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full bg-neutral-500/[0.02] blur-[120px] pointer-events-none" />
+        
+        {/* Stunning intense white radial shine directly behind the login card */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] h-[360px] rounded-full bg-white/[0.08] blur-[70px] pointer-events-none mix-blend-screen animate-[pulse-glow_4s_ease-in-out_infinite]" />
+        
+        {/* Main Card: Premium Glassmorphic Neural Hub */}
+        <div className="w-full max-w-md relative z-10 p-8 md:p-10 rounded-[32px] border border-[var(--border)] bg-gradient-to-b from-[#0d0d0d]/80 to-[#020202]/95 backdrop-blur-3xl shadow-2xl animate-fade-in-up">
           
-          {/* Mobile logo (hidden on desktop) */}
-          <div className="flex flex-col items-center mb-6 lg:hidden">
-            <svg width="90" height="90" viewBox="0 0 120 120" fill="none" className="mb-4 drop-shadow-xl">
-              <rect x="10" y="10" width="100" height="100" rx="16" fill="#0d0d0d" stroke="#262626" strokeWidth="1.5" />
-              <path d="M10 35h100M10 60h100M10 85h100M35 10v100M60 10v100M85 10v100" stroke="#141414" strokeWidth="0.8" />
-              <circle cx="26" cy="24" r="3" fill="#333333" />
-              <circle cx="36" cy="24" r="3" fill="#333333" />
-              <circle cx="46" cy="24" r="3" fill="#333333" />
-              <path d="M26 46l8 6-8 6" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="38" y1="58" x2="48" y2="58" stroke="#a3a3a3" strokeWidth="2.2" strokeLinecap="round" />
-              <path d="M52 58h18l12-12h12M70 58l10 10h14" stroke="#525252" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M60 42l10-10h22" stroke="#404040" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="92" cy="46" r="4.5" fill="#ffffff" stroke="#000000" strokeWidth="1" />
-              <circle cx="94" cy="68" r="3.5" fill="#a3a3a3" stroke="#000000" strokeWidth="1" />
-              <circle cx="92" cy="32" r="3.5" fill="#737373" stroke="#000000" strokeWidth="1" />
-              <text x="30" y="86" fill="#404040" fontSize="8.5" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">01001101</text>
-              <text x="30" y="97" fill="#222222" fontSize="8" fontFamily="monospace" fontWeight="bold" letterSpacing="0.5">SYS_MEM</text>
-            </svg>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Mindly AI</h1>
-          </div>
+          {/* Subtle top edge highlighting bar */}
+          <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-neutral-600/30 to-transparent" />
 
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">
-              {mode === 'signup' 
-                ? 'Create account' 
-                : (mode === 'forgot-password' 
-                  ? 'Reset password' 
-                  : (mode === 'otp-verify' 
-                    ? 'Verify Security Code' 
+            <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-tight font-sans">
+              {mode === 'signup'
+                ? 'Create account'
+                : (mode === 'forgot-password'
+                  ? 'Reset password'
+                  : (mode === 'otp-verify'
+                    ? 'Verify Security Code'
                     : 'Sign in'))}
             </h1>
-            <p className="text-[var(--text-muted)] text-sm mt-1.5">
-              {mode === 'signup' 
-                ? 'Start building your AI memory today' 
-                : (mode === 'forgot-password' 
-                  ? 'Enter your email to receive a recovery link' 
-                  : (mode === 'otp-verify' 
-                    ? 'A 6-digit security code was dispatched to your email' 
-                    : 'Continue where you left off'))}
+            <p className="text-[var(--text-secondary)] text-xs mt-2 leading-relaxed font-sans">
+              {mode === 'signup'
+                ? 'Start building your persistent digital mind today.'
+                : (mode === 'forgot-password'
+                  ? 'Enter your verified email to receive a recovery code.'
+                  : (mode === 'otp-verify'
+                    ? 'A 6-digit security code was dispatched to your inbox.'
+                    : 'Log in to sync your permanent conversational canvas.'))}
             </p>
           </div>
 
           {mode === 'otp-verify' ? (
-            <form onSubmit={handleOtpSubmit} className="space-y-5">
+            <form onSubmit={handleOtpSubmit} className="space-y-6">
               {/* Email sent indicator */}
               <div className="text-center mb-2">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)] mb-4">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#27c93f]">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="text-xs text-[var(--text-secondary)]">
-                    Code sent to <span className="font-semibold text-[var(--text-primary)]">{email}</span>
+                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-900/60 border border-neutral-800/80 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10.5px] text-[var(--text-secondary)] font-medium">
+                    Sent to <span className="font-semibold text-[var(--text-primary)]">{email}</span>
                   </span>
                 </div>
               </div>
 
               <div className="text-center">
-                <label className="block text-xs font-semibold text-[var(--text-muted)] mb-5 uppercase tracking-wider">
-                  Enter 6-Digit Code
+                <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-5 uppercase tracking-widest font-mono">
+                  Enter 6-Digit Verification Code
                 </label>
-                
+
                 {/* OTP Input Boxes with shake animation */}
-                <div className={`flex justify-between gap-2.5 max-w-[320px] mx-auto mb-6 ${otpShake ? 'animate-shake' : ''}`}>
+                <div className={`flex justify-between gap-2 max-w-[320px] mx-auto mb-6 ${otpShake ? 'animate-shake' : ''}`}>
                   {[0, 1, 2, 3, 4, 5].map((idx) => (
                     <input
                       key={idx}
@@ -571,16 +559,15 @@ export default function LoginPage() {
                       onChange={(e) => handleOtpChange(idx, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                       disabled={otpLocked || otpSuccess}
-                      className={`w-12 h-14 text-center text-xl font-bold rounded-xl outline-none transition-all duration-200
-                        ${otpSuccess 
-                          ? 'bg-[#0a1f0e] border-2 border-[#27c93f] text-[#27c93f] animate-success-pulse' 
+                      className={`w-11 h-13 text-center text-xl font-bold rounded-xl outline-none transition-all duration-200
+                        ${otpSuccess
+                          ? 'bg-[#0a200e]/50 border-2 border-emerald-500 text-emerald-400 animate-success-pulse shadow-[0_0_15px_rgba(16,185,129,0.15)]'
                           : otpLocked
-                            ? 'bg-[#1a1010] border border-[#3a1a1a] text-[#525252] cursor-not-allowed'
+                            ? 'bg-[#1a0e0e]/50 border border-rose-950/40 text-neutral-600 cursor-not-allowed'
                             : otpValues[idx]
-                              ? 'bg-[var(--bg-input)] border-2 border-[#555555] text-[var(--text-primary)]'
-                              : 'bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)]'
+                              ? 'bg-[#151515] border-2 border-neutral-500 text-[var(--text-primary)] shadow-[0_0_10px_rgba(255,255,255,0.02)]'
+                              : 'bg-[#080808] border border-[var(--border)] text-[var(--text-primary)] focus:border-neutral-500'
                         }
-                        ${!otpLocked && !otpSuccess ? 'focus:border-[#888888] focus:ring-1 focus:ring-white/10' : ''}
                       `}
                     />
                   ))}
@@ -588,17 +575,16 @@ export default function LoginPage() {
 
                 {/* Attempt dots indicator */}
                 {!otpSuccess && (
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Attempts</span>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-[9px] text-[var(--text-muted)] uppercase font-mono tracking-widest">Security Limits</span>
                     <div className="flex gap-1.5">
                       {[0, 1, 2].map((i) => (
                         <div
                           key={i}
-                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                            i < otpAttempts
-                              ? 'bg-[#ff4444]'
-                              : 'bg-[var(--border)]'
-                          }`}
+                          className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i < otpAttempts
+                              ? 'bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                              : 'bg-neutral-800'
+                            }`}
                         />
                       ))}
                     </div>
@@ -608,66 +594,58 @@ export default function LoginPage() {
 
               {/* Error / Success messages */}
               {error && (
-                <div className={`px-4 py-3 rounded-xl text-xs flex items-center gap-2 ${
-                  otpLocked 
-                    ? 'bg-[#1a0e0e] border border-[#3a1a1a] text-[#ff6b6b]' 
-                    : error.includes('expired')
-                      ? 'bg-[#1a1400] border border-[#2e1e00] text-[#f59e0b]'
-                      : 'bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)]'
-                }`}>
-                  <span>{otpLocked ? '🔒' : error.includes('expired') ? '⏱' : '✕'}</span>
-                  {error}
+                <div className={`px-4 py-3 rounded-2xl text-xs flex items-center gap-2.5 border animate-fade-in-up ${otpLocked
+                    ? 'bg-rose-950/10 border-rose-900/30 text-rose-400'
+                    : 'bg-neutral-900/50 border-neutral-800/80 text-amber-400'
+                  }`}>
+                  <span className="text-base">{otpLocked ? '🔒' : '⚠️'}</span>
+                  <span className="leading-relaxed font-medium">{error}</span>
                 </div>
               )}
               {success && (
-                <div className={`px-4 py-3 rounded-xl text-xs flex items-center gap-2 ${
-                  otpSuccess 
-                    ? 'bg-[#0a1f0e] border border-[#1a3a1e] text-[#27c93f]'
-                    : 'bg-white/10 border border-white/20 text-[var(--text-primary)]'
-                }`}>
-                  <span>{otpSuccess ? '✓' : '📨'}</span>
-                  {success}
+                <div className={`px-4 py-3 rounded-2xl text-xs flex items-center gap-2.5 border border-emerald-950/20 bg-emerald-950/5 text-emerald-400 animate-fade-in-up`}>
+                  <span className="text-base">📬</span>
+                  <span className="leading-relaxed font-medium">{success}</span>
                 </div>
               )}
 
-              {/* Verify button — hidden during auto-submit success, shown as fallback */}
+              {/* Verify button — hidden during auto-submit success */}
               {!otpSuccess && (
-                <button 
-                  type="submit" 
-                  disabled={loading || otpLocked || otpValues.some(v => !v)} 
-                  className="btn-primary w-full text-sm h-12 disabled:opacity-40 disabled:cursor-not-allowed"
+                <button
+                  type="submit"
+                  disabled={loading || otpLocked || otpValues.some(v => !v)}
+                  className="btn-primary w-full text-xs h-12 disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider font-mono"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Verifying...
+                      Verifying Token...
                     </span>
-                  ) : otpLocked ? '🔒 Locked — Request New Code' : 'Verify Code →'}
+                  ) : otpLocked ? 'Locked • Request New Code' : 'Verify Security Code'}
                 </button>
               )}
 
               {/* Resend + Back row */}
-              <div className="flex justify-between items-center text-xs mt-2">
+              <div className="flex justify-between items-center text-[10.5px] mt-4 border-t border-neutral-900 pt-4">
                 <button
                   type="button"
                   onClick={handleResendCode}
                   disabled={loading || (resendCooldown > 0 && !otpLocked)}
-                  className={`transition-colors font-semibold ${
-                    resendCooldown > 0 && !otpLocked
-                      ? 'text-[var(--text-muted)]/50 cursor-not-allowed'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
+                  className={`transition-colors font-bold ${resendCooldown > 0 && !otpLocked
+                      ? 'text-[var(--text-muted)] cursor-not-allowed'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
                 >
-                  {otpLocked 
-                    ? 'Request New Code' 
-                    : resendCooldown > 0 
-                      ? `Resend in ${resendCooldown}s` 
-                      : 'Resend Code'}
+                  {otpLocked
+                    ? 'Request New Code'
+                    : resendCooldown > 0
+                      ? `Resend in ${resendCooldown}s`
+                      : 'Resend Verification Code'}
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={() => {
@@ -682,9 +660,9 @@ export default function LoginPage() {
                     if (resendTimerRef.current) clearInterval(resendTimerRef.current);
                     setResendCooldown(0);
                   }}
-                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors font-semibold"
+                  className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-bold"
                 >
-                  ← Back to Sign In
+                  ← Sign In
                 </button>
               </div>
             </form>
@@ -692,46 +670,52 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {mode === 'signup' && (
                 <>
-                  <div>
-                    <label htmlFor="signup-name" className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Full Name</label>
-                    <input id="signup-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required className="input-dark" />
-                    
-                    {/* Tapped Selection Suggestion Chips */}
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                  <div className="space-y-1.5 animate-fade-in-up">
+                    <label htmlFor="signup-name" className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest font-mono">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                      Display name
+                    </label>
+                    <input id="signup-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter nickname" required className="input-dark text-xs h-11" />
+
+                    {/* Suggestions list */}
+                    <div className="flex flex-wrap gap-1 mt-1.5">
                       {NAME_SUGGESTIONS.map((s) => (
                         <button
                           key={s}
                           type="button"
                           onClick={() => setName(s)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all ${
-                            name === s
-                              ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] border-[var(--text-primary)]'
-                              : 'bg-[#141414] text-[var(--text-secondary)] border-[var(--border)] hover:border-[#555555]'
-                          }`}
+                          className={`px-2 py-1 rounded-lg text-[9px] font-bold border transition-all ${name === s
+                              ? 'bg-[var(--text-primary)] text-black border-[var(--text-primary)] shadow-sm'
+                              : 'bg-neutral-900/50 text-[var(--text-secondary)] border-neutral-800/80 hover:border-neutral-700'
+                            }`}
                         >
                           {s}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <label htmlFor="signup-country" className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Country</label>
+
+                  <div className="space-y-1.5 animate-fade-in-up">
+                    <label htmlFor="signup-country" className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest font-mono">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+                      Country
+                    </label>
                     <div className="relative">
                       <select
                         id="signup-country"
                         value={country}
                         onChange={(e) => setCountry(e.target.value)}
                         required
-                        className="input-dark appearance-none bg-[var(--bg-input)] cursor-pointer pr-10"
+                        className="input-dark appearance-none bg-[#080808] cursor-pointer pr-10 text-xs h-11 focus:border-neutral-500"
                         style={{
-                          backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23a3a3a3' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                          backgroundPosition: 'right 12px center',
-                          backgroundSize: '1.5em 1.5em',
+                          backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23737373' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                          backgroundPosition: 'right 14px center',
+                          backgroundSize: '1.2em 1.2em',
                           backgroundRepeat: 'no-repeat',
                         }}
                       >
                         {COUNTRIES.map((c) => (
-                          <option key={c} value={c} className="bg-[#141414] text-[var(--text-primary)]">
+                          <option key={c} value={c} className="bg-[#0c0c0c] text-[var(--text-primary)]">
                             {c}
                           </option>
                         ))}
@@ -741,64 +725,70 @@ export default function LoginPage() {
                 </>
               )}
 
-              <div>
-                <label htmlFor="login-email" className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Email</label>
-                <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required className="input-dark" autoComplete="email" />
+              <div className="space-y-1.5">
+                <label htmlFor="login-email" className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest font-mono">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                  Email Address
+                </label>
+                <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className="input-dark text-xs h-11" autoComplete="email" />
               </div>
 
               {mode !== 'forgot-password' && (
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label htmlFor="login-password" className="block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Password</label>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="login-password" className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest font-mono">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      Password
+                    </label>
                     {mode === 'login' && (
                       <button
                         type="button"
                         onClick={() => { setMode('forgot-password'); setError(''); setSuccess(''); }}
-                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                        className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-bold transition-colors"
                       >
                         Forgot password?
                       </button>
                     )}
                   </div>
                   <div className="relative flex items-center">
-                    <input 
-                      id="login-password" 
-                      type={showPassword ? "text" : "password"} 
-                      value={password} 
-                      onChange={(e) => setPassword(e.target.value)} 
-                      placeholder="••••••••" 
-                      required 
-                      className="input-dark pr-10" 
-                      autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} 
+                    <input
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="input-dark pr-10 text-xs h-11"
+                      autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors focus:outline-none flex items-center cursor-pointer"
+                      className="absolute right-3.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors focus:outline-none flex items-center cursor-pointer"
                       title={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
                       ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                           <line x1="1" y1="1" x2="23" y2="23" />
                         </svg>
                       )}
                     </button>
                   </div>
-                  {mode === 'signup' && <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Min 8 characters · uppercase · lowercase · number</p>}
+                  {mode === 'signup' && <p className="text-[9px] text-[var(--text-muted)] font-mono">Min 8 chars • mixed case • number</p>}
                 </div>
               )}
 
-              {error && <div className="px-4 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)] text-xs">{error}</div>}
-              {success && <div className="px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-[var(--text-primary)] text-xs">{success}</div>}
+              {error && <div className="px-4 py-3 rounded-2xl bg-neutral-900/50 border border-neutral-800/80 text-rose-400 font-medium text-xs leading-relaxed animate-fade-in-up flex gap-2"><span>✕</span>{error}</div>}
+              {success && <div className="px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-medium text-xs leading-relaxed animate-fade-in-up flex gap-2"><span>📨</span>{success}</div>}
 
-              <button type="submit" disabled={loading} className="btn-primary w-full text-sm h-12">
-                {loading ? 'Authenticating...' : mode === 'signup' ? 'Create Account →' : (mode === 'forgot-password' ? 'Send Reset Link →' : 'Sign In →')}
+              <button type="submit" disabled={loading} className="btn-primary w-full text-xs h-11 uppercase font-mono tracking-widest mt-2">
+                {loading ? 'Processing Workspace...' : mode === 'signup' ? 'Create Secure Account' : (mode === 'forgot-password' ? 'Send Recovery Code' : 'Sign In')}
               </button>
             </form>
           )}
@@ -806,10 +796,10 @@ export default function LoginPage() {
           {/* Divider */}
           {mode !== 'forgot-password' && mode !== 'otp-verify' && (
             <>
-              <div className="flex items-center gap-3 my-5">
-                <div className="flex-1 h-[1px] bg-[#222222]" />
-                <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">Or continue with</span>
-                <div className="flex-1 h-[1px] bg-[#222222]" />
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 h-[1.2px] bg-neutral-900" />
+                <span className="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold font-mono">OAuth Gateways</span>
+                <div className="flex-1 h-[1.2px] bg-neutral-900" />
               </div>
 
               {/* Google Sign In Button */}
@@ -817,30 +807,30 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full h-12 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] hover:border-[#555555] transition-all flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-primary)]"
+                className="w-full h-11 rounded-xl border border-[var(--border)] bg-[#070707] hover:bg-neutral-950 hover:border-neutral-700/80 transition-all flex items-center justify-center gap-3 text-xs font-bold text-[var(--text-primary)] cursor-pointer"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                  <path fill="#4285F4" d="M46.5 24c0-1.55-.15-3.24-.47-4.77H24v9.03h12.75c-.55 2.86-2.18 5.29-4.63 6.91l7.19 5.56C43.5 36.5 46.5 30.82 46.5 24z"/>
-                  <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.98-6.19z"/>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.19-5.56c-2.03 1.36-4.63 2.18-8.7 2.18-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                  <path fill="#4285F4" d="M46.5 24c0-1.55-.15-3.24-.47-4.77H24v9.03h12.75c-.55 2.86-2.18 5.29-4.63 6.91l7.19 5.56C43.5 36.5 46.5 30.82 46.5 24z" />
+                  <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.98-6.19z" />
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.19-5.56c-2.03 1.36-4.63 2.18-8.7 2.18-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
                 </svg>
-                Sign in with Google
+                Continue with Google
               </button>
             </>
           )}
 
           {mode !== 'otp-verify' && (
-            <p className="mt-8 text-center text-xs text-[var(--text-muted)]">
+            <p className="mt-8 text-center text-xs text-[var(--text-secondary)] font-sans border-t border-neutral-900/60 pt-5">
               {mode === 'forgot-password' ? (
-                <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-[var(--text-primary)] hover:underline font-semibold transition-colors">
-                  Back to Sign in
+                <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} className="text-[var(--text-primary)] hover:underline font-bold transition-colors cursor-pointer">
+                  ← Back to Sign In
                 </button>
               ) : (
                 <>
                   {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
-                  <button onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); setSuccess(''); }} className="text-[var(--text-primary)] hover:underline font-semibold transition-colors">
-                    {mode === 'signup' ? 'Sign in' : 'Create one'}
+                  <button onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); setSuccess(''); }} className="text-[var(--text-primary)] hover:underline font-bold transition-colors cursor-pointer">
+                    {mode === 'signup' ? 'Sign in' : 'Create free account'}
                   </button>
                 </>
               )}

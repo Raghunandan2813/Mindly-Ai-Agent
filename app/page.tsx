@@ -80,14 +80,14 @@ export default function Home() {
         if (data.userId) {
           setUserId(data.userId);
           setUserEmail(data.email || '');
-          
+
           // Load proactive reflections configuration from API response
           const enabled = data.proactiveEnabled === true;
           setProactiveEnabled(enabled);
           if (typeof window !== 'undefined') {
             localStorage.setItem('mindly_proactive_enabled', enabled ? 'true' : 'false');
           }
-          
+
           fetchSessions(data.userId, true);
 
           // Trigger onboarding if not completed yet according to global DB flag
@@ -120,7 +120,7 @@ export default function Home() {
   const toggleProactive = async () => {
     const nextVal = !proactiveEnabled;
     setProactiveEnabled(nextVal);
-    
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('mindly_proactive_enabled', nextVal ? 'true' : 'false');
     }
@@ -195,16 +195,15 @@ export default function Home() {
     <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans">
       {/* Sliding Sidebar - Sessions List */}
       <div
-        className={`fixed inset-y-0 left-0 z-30 w-full md:relative bg-[var(--bg-secondary)] flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
-          sidebarOpen
+        className={`fixed inset-y-0 left-0 z-30 w-full md:relative bg-[var(--bg-secondary)] flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${sidebarOpen
             ? 'translate-x-0 md:translate-x-0 md:w-80'
             : '-translate-x-full md:-translate-x-full md:w-0'
-        }`}
+          }`}
       >
         {/* Rigid inner container prevents wrapping/squishing during sliding animation */}
         {/* Rigid inner container prevents wrapping/squishing during sliding animation */}
         <div className="w-80 h-full flex flex-col flex-shrink-0 md:w-80">
-          
+
           {/* Sidebar Header */}
           <div className="p-4 border-b border-[var(--border)] flex flex-col gap-4 bg-[var(--bg-secondary)]">
             <div className="flex items-center justify-between">
@@ -224,9 +223,9 @@ export default function Home() {
                 title="Collapse Sidebar"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="9" y1="3" x2="9" y2="21"/>
-                  <path d="M16 15l-3-3 3-3"/>
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                  <path d="M16 15l-3-3 3-3" />
                 </svg>
               </button>
             </div>
@@ -237,7 +236,7 @@ export default function Home() {
               className="w-full py-2.5 rounded-xl bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg-primary)] font-semibold text-xs transition-all flex items-center justify-center gap-2 shadow-sm"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               New chat
             </button>
@@ -263,11 +262,10 @@ export default function Home() {
                     <button
                       key={session.id}
                       onClick={() => changeSession(session.id)}
-                      className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between transition-all ${
-                        isActive
+                      className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between transition-all ${isActive
                           ? 'bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border)]'
                           : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
-                      }`}
+                        }`}
                     >
                       <span className="text-xs truncate max-w-[180px]">
                         {session.title || 'Untitled chat'}
@@ -300,9 +298,8 @@ export default function Home() {
               </div>
               <button
                 onClick={toggleProactive}
-                className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center ${
-                  proactiveEnabled ? 'bg-amber-500 justify-end' : 'bg-[var(--bg-secondary)] justify-start'
-                }`}
+                className={`w-9 h-5 rounded-full p-0.5 transition-all duration-300 cursor-pointer flex items-center ${proactiveEnabled ? 'bg-amber-500 justify-end' : 'bg-[var(--bg-secondary)] justify-start'
+                  }`}
                 title={proactiveEnabled ? "Disable Proactive reflections" : "Enable Proactive reflections"}
               >
                 <div className="w-4 h-4 rounded-full bg-[var(--bg-primary)] shadow-sm" />
@@ -388,13 +385,13 @@ export default function Home() {
           <div className="w-full max-w-md bg-[var(--bg-secondary)] border border-[var(--border)] rounded-3xl p-6 shadow-2xl relative overflow-hidden backdrop-blur-md bg-opacity-80">
             {/* Visual Header Decoration */}
             <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-neutral-800 via-neutral-400 to-neutral-800" />
-            
+
             {/* Step Counter */}
             <div className="flex justify-between items-center mb-6">
               <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] font-mono">
                 System Onboarding · Step {onboardingStep} of 4
               </span>
-              <button 
+              <button
                 onClick={handleCompleteOnboarding}
                 className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
@@ -457,9 +454,9 @@ export default function Home() {
             <div className="mt-8 flex justify-between items-center border-t border-[var(--border)] pt-4">
               <div className="flex gap-1.5">
                 {[1, 2, 3, 4].map((s) => (
-                  <span 
-                    key={s} 
-                    className={`h-1.5 rounded-full transition-all duration-300 ${onboardingStep === s ? 'w-5 bg-white' : 'w-1.5 bg-neutral-800'}`} 
+                  <span
+                    key={s}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${onboardingStep === s ? 'w-5 bg-white' : 'w-1.5 bg-neutral-800'}`}
                   />
                 ))}
               </div>
