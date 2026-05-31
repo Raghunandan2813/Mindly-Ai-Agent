@@ -28,13 +28,11 @@ interface ChatRequestBody {
 
 // Active free models on OpenRouter (May 2026)
 const OPENROUTER_FREE_FALLBACKS = [
-  'deepseek/deepseek-v4-flash:free',
-  'qwen/qwen3-coder:free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'google/gemma-4-31b-it:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
-  'nvidia/nemotron-3-nano-30b-a3b:free',
-  'openrouter/free',
+  'google/gemma-2-9b-it:free',
+  'meta-llama/llama-3-8b-instruct:free',
+  'qwen/qwen-2.5-7b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
+  'openrouter/auto',
 ];
 
 export async function POST(req: NextRequest) {

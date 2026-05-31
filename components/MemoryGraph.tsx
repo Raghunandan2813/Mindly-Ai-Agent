@@ -67,14 +67,25 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const w = canvas.width;
-    const h = canvas.height;
+    const w = canvas.width || 350;
+    const h = canvas.height || 500;
     const centerX = w / 2;
     const centerY = h / 2;
 
-    // Place nodes in a circular layout with some randomness
+    // Place nodes in a circular layout, preserving existing coordinates to prevent jumpy layout resets
     const graphNodes: GraphNode[] = rawNodes.map((n, i) => {
-      const angle = (i / rawNodes.length) * Math.PI * 2;
+      const existing = nodesRef.current.find(en => en.id === n.id);
+      if (existing && !isNaN(existing.x) && !isNaN(existing.y)) {
+        return {
+          ...n,
+          x: existing.x,
+          y: existing.y,
+          vx: existing.vx || 0,
+          vy: existing.vy || 0,
+        };
+      }
+
+      const angle = (i / Math.max(rawNodes.length, 1)) * Math.PI * 2;
       const radius = Math.min(w, h) * 0.3 + (Math.random() - 0.5) * 80;
       return {
         ...n,
@@ -109,6 +120,27 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
     const DAMPING = 0.85;
     const CENTER_GRAVITY = 0.002;
 
+    // Sanity check: Ensure no coordinates or velocities are NaN. If they are, heal them instantly.
+    let hasNaN = false;
+    for (const node of nodes) {
+      if (isNaN(node.x) || isNaN(node.y) || isNaN(node.vx) || isNaN(node.vy)) {
+        hasNaN = true;
+        break;
+      }
+    }
+
+    if (hasNaN) {
+      console.warn('[MemoryGraph] NaN coordinate/velocity detected! Auto-healing layout...');
+      nodes.forEach((node, idx) => {
+        const angle = (idx / Math.max(nodes.length, 1)) * Math.PI * 2;
+        const radius = Math.min(w, h) * 0.25;
+        node.x = (w / 2) + Math.cos(angle) * radius;
+        node.y = (h / 2) + Math.sin(angle) * radius;
+        node.vx = 0;
+        node.vy = 0;
+      });
+    }
+
     // Repulsion between all node pairs
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
@@ -137,14 +169,19 @@ export default function MemoryGraph({ nodes: rawNodes, edges: rawEdges, onDelete
 
       const dx = target.x - source.x;
       const dy = target.y - source.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      // Safety Cushion: Clamp minimum distance to 1px to prevent division-by-zero NaN explosion if nodes touch
+      const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
       const force = dist * ATTRACTION;
       const fx = (dx / dist) * force;
       const fy = (dy / dist) * force;
-      source.vx += fx;
-      source.vy += fy;
-      target.vx -= fx;
-      target.vy -= fy;
+      
+      if (!isNaN(fx) && !isNaN(fy)) {
+        source.vx += fx;
+        source.vy += fy;
+        target.vx -= fx;
+        target.vy -= fy;
+      }
     }
 
     // Center gravity + update positions
